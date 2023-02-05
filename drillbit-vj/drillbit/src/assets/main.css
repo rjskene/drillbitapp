@@ -1,0 +1,160 @@
+@import './base.css';
+
+#this {
+  border: 1px dashed #ff0000; 
+}
+
+.standard-border {
+  border: 1px solid var(--v-theme-surface-lighten-24);
+}
+.tab-color-surface {
+  background-color: rgb(var(--v-theme-surface));
+}
+.surface-elevation-01dp {
+  background-color: var(--surface-01dp) !important;
+}
+.surface-elevation-02dp {
+  background-color: var(--surface-02dp) !important;
+}
+.surface-elevation-03dp {
+  background-color: var(--surface-03dp) !important;
+}
+.surface-elevation-04dp {
+  background-color: var(--surface-04dp) !important;
+}
+.surface-elevation-06dp {
+  background-color: var(--surface-06dp) !important;
+}
+.surface-elevation-08dp {
+  background-color: var(--surface-08dp) !important;
+}
+.surface-elevation-12dp {
+  background-color: var(--surface-12dp) !important;
+}
+.surface-elevation-24dp {
+  background-color: var(--surface-24dp) !important;
+}
+.bg-surface-01dp {
+  color: var(--surface-01dp) !important;
+  opacity: var(--v-high-emphasis-opacity);
+}
+
+.border-surface-01dp {
+  border-color: var(--surface-24dp) !important;
+  border-width: 1px !important;
+}
+
+.min-col-width-2dot5 {
+  min-width: 2.5rem
+}
+.min-col-width-5 {
+  min-width: 5rem
+}
+.min-col-width-7dot5 {
+  min-width: 7.5rem
+}
+.min-col-width-10 {
+  min-width: 10rem
+}
+.min-col-width-12dot5 {
+  min-width: 12.5rem
+}
+.min-col-width-15 {
+  min-width: 15rem
+}
+.min-col-width-15 {
+  min-width: 15rem
+}
+.min-col-width-17dot5 {
+  min-width: 17.5rem
+}
+.min-col-width-20 {
+  min-width: 20rem
+}
+.max-col-width-2dot5 {
+  max-width: 2.5rem
+}
+.max-col-width-5 {
+  max-width: 5rem
+}
+.max-col-width-7dot5 {
+  max-width: 7.5srem
+}
+.max-col-width-10 {
+  max-width: 10rem
+}
+.max-col-width-12dot5 {
+  max-width: 12.5rem
+}
+.max-col-width-15 {
+  max-width: 15rem
+}
+.max-col-width-17dot5 {
+  max-width: 17.5rem
+}
+.max-col-width-20 {
+  max-width: 20rem
+}
+.padding-dot5 {
+padding: .5rem !important;
+}
+.padding-right-dot5 {
+  padding-right: .5rem !important;
+}
+.padding-right-1 {
+  padding-right: 1rem !important;
+}
+.padding-right-2 {
+  padding-right: 2rem !important;
+}
+
+.padding-left-2 {
+  padding-left: 2rem;
+}
+.padding-left-4 {
+  padding-left: 4rem;
+}
+.padding-left-6 {
+  padding-left: 6rem;
+}
+
+/* PrimeVue DataTable CSS */
+.table-header-left > .p-column-header-content {
+  justify-content: left !important;
+}
+.table-header-center > .p-column-header-content {
+  justify-content: center !important;
+}
+.table-header-right {
+  justify-content: right !important;
+}
+.table-header-right > .p-column-header-content {
+  justify-content: right !important;
+}
+.table-body {
+  font-size: .75rem;
+  line-height: .5rem;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+}
+.table-body-center {
+  justify-content: center !important;
+  text-align: center !important;
+}
+.table-body-right {
+  justify-content: right !important;
+  text-align: right !important;
+}
+td.ellipsis {
+  padding-top: .5rem !important;
+  padding-bottom: .5rem !important;
+}
+td.ellipsis > span {
+  left: 0;
+  right: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-top: .5rem;
+  padding-bottom: .5rem;
+}
