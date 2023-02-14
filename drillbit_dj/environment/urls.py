@@ -8,6 +8,7 @@ router.register('block-schedule', views.BlockScheduleViewSet, basename='block-sc
 router.register('bitcoin-price', views.BitcoinPriceViewSet, basename='bitcoin-price')
 router.register('transaction-fees', views.TransactionFeesViewSet, basename='transaction-fees')
 router.register('hash-rate', views.HashRateViewSet, basename='hash-rate') 
+router.register('environment', views.EnvironmentViewSet, basename='environment')
 
 urlpatterns = [
 ]

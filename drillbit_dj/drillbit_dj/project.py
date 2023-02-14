@@ -102,3 +102,4 @@ class BulkUpdateViewSetMixin:
             return Response(serializer.data)
         else:
             return Response({'error': 'No data provided.'})
+            

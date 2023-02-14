@@ -3,7 +3,7 @@ import pandas as pd
 from rest_framework import serializers
 
 from drillbit_dj.project import ProjectListSerializer, GetOrCreateSerializerMixin
-from environment.models import BlockSchedule, BitcoinPrice, TransactionFees, HashRate
+from environment.models import Environment, BlockSchedule, BitcoinPrice, TransactionFees, HashRate
 
 class JSONConversionField(serializers.JSONField):
     """
@@ -30,12 +30,10 @@ class EnvironmentCreateMixin(GetOrCreateSerializerMixin):
         database, if it doesn't exist already first.
         """
         blocks = validated_data.pop('blocks')
-        try:
-            obj = self._try_get(validated_data, blocks=blocks.id)
-        except self.Meta.model.DoesNotExist:
-            periods = BlockScheduleSerializer(blocks, bitcoin_utility=self.btc).to_schedule().period
-            forecast = self.btc.forecast(periods=periods, **validated_data)
-            obj = self._schedule_create(forecast, validated_data, blocks=blocks)
+        periods = BlockScheduleSerializer(blocks, bitcoin_utility=self.btc).to_schedule().period
+        forecast = self.btc.forecast(periods=periods, **validated_data)
+        obj = self._schedule_create(forecast, validated_data, blocks=blocks)
+
         return obj
 
 class BlockScheduleSerializer(
@@ -84,6 +82,7 @@ class BitcoinPriceSerializer(
     class Meta:
         model = BitcoinPrice
         fields = (
+            'id',
             'blocks', 'model', 'initial', 'mean', 'volatility', 'data'
         )
         list_serializer_class = ProjectListSerializer
@@ -100,6 +99,7 @@ class TransactionFeesSerializer(
     class Meta:
         model = TransactionFees
         fields = (
+            'id',
             'blocks', 'model', 'initial', 'mean', 'volatility', 'data'
         )
         list_serializer_class = ProjectListSerializer
@@ -116,7 +116,25 @@ class HashRateSerializer(
     class Meta:
         model = HashRate
         fields = (
+            'id',
             'blocks', 'model', 'initial', 'mean', 'volatility', 'data'
         )
         list_serializer_class = ProjectListSerializer
         validators = []  # Removes the "unique together" constraint.
+
+class EnvironmentSerializer(serializers.ModelSerializer):
+    block_schedule = serializers.PrimaryKeyRelatedField(queryset=BlockSchedule.objects.all())
+    bitcoin_price = serializers.PrimaryKeyRelatedField(queryset=BitcoinPrice.objects.all())
+    transaction_fees = serializers.PrimaryKeyRelatedField(queryset=TransactionFees.objects.all())
+    hash_rate = serializers.PrimaryKeyRelatedField(queryset=HashRate.objects.all())
+
+    class Meta:
+        model = Environment
+        fields = (
+            'id',
+            'name',
+            'block_schedule',
+            'bitcoin_price', 
+            'transaction_fees', 
+            'hash_rate'
+        )

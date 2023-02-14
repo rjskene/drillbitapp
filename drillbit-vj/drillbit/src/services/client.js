@@ -27,8 +27,28 @@ class Client {
     let res = await this.client.put(`/${app}/${model}/${pk}/`, params)
     return res
   }
+  async deleteObject({app, model, pk}) {
+    let res = await this.client.delete(`/${app}/${model}/${pk}/`)
+    return res
+  }
+  async updateOrCreateObject({app, model, pk, params}) {
+    let res
+    if (pk)
+      res = await this.updateObject({app, model, pk, params})
+    else
+      res = await this.createObjects({app, model, params})
+    return res
+  }
   async bulkUpdateObjects({app, model, params}) {
     let res = await this.client.put(`/${app}/${model}/bulk-update/`, params)
+    return res
+  }
+  async scaleProject({app, model, pk}) {
+    let res = await this.client.put(`/${app}/${model}/${pk}/scale/`)
+    return res
+  }
+  async getProjectCosts({app, model, pk}) {
+    let res = await this.client.get(`/${app}/${model}/${pk}/costs/`)
     return res
   }
 

@@ -17,6 +17,7 @@ const globalState = useGlobalStateStore()
 const blockStore = useBlockScheduleStore()
 const store = useBTCPriceStore()
 
+const createState = ref(null)
 const { object } = storeToRefs(store)
 const { nameRules, numberRules, numberIfNotNullRules } = useFormHelpers()
 
@@ -32,7 +33,8 @@ const forecast = computed(() => {
     mean, 
     volatility,
     model,
-    createFunc: store.createObjects
+    createFunc: store.createObjects,
+    createState,
   })}
 )
 
@@ -77,8 +79,8 @@ const forecast = computed(() => {
       />
     </template>
     <template #chart>
-      <Skeleton v-if="forecast.createState?.isLoading" width="100%" height="500px"></Skeleton>
-      <PlaceholderChart v-else-if="!forecast.createState?.isLoading && !store.object?.data"></PlaceholderChart>
+      <Skeleton v-if="createState?.isLoading" width="100%" height="500px"></Skeleton>
+      <PlaceholderChart v-else-if="!createState?.isLoading && !store.object?.data"></PlaceholderChart>
       <Chart 
         v-else-if="store.object?.data"
         :data="forecast.enviroForm.every_nth(store.object.data, 1000)"

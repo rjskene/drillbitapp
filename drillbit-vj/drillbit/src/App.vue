@@ -1,8 +1,32 @@
 <script setup>
 import { RouterView } from 'vue-router'
+import { useAsyncState } from '@vueuse/core'
 
 import AppBar from './components/AppBar.vue'
 import NavDrawer from './components/NavDrawer.vue'
+
+import { 
+  useRigStore, 
+  useCoolingStore, 
+  useRejectionStore,
+  useElectricalStore,
+  useEnvironmentStore,
+  useProjectsStore,
+  } from './stores/modules'
+
+const rigStore = useRigStore()
+rigStore.getObjects()
+const coolingStore = useCoolingStore()
+coolingStore.getObjects()
+const rejectStore = useRejectionStore()
+rejectStore.getObjects()
+const electricalStore = useElectricalStore()
+electricalStore.getObjects()
+const environmentStore = useEnvironmentStore()
+environmentStore.getObjects()
+const projectsStore = useProjectsStore()
+projectsStore.getObjects()
+
 </script>
 
 <template>

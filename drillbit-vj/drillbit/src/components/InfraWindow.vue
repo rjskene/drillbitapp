@@ -50,6 +50,21 @@ const columns = computed(() => {
       }
     },
     {
+      field: 'power',
+      header: 'Power',
+      headerClass: 'table-header-center',
+      bodyClass: 'table-body-center min-col-width-2dot5',
+      bodyFunc: format.power,
+      editor: {
+        component: InputNumber,
+        args: {
+          mode: 'decimal',
+          locale: "en-US",
+          suffix: ' W',
+        }
+      },
+    },
+    {
       field: 'pue',
       header: 'PUE',
       headerClass: 'table-header-center',
@@ -57,6 +72,8 @@ const columns = computed(() => {
       editor: {
         component: InputNumber,
         args: {
+          mode: 'decimal',
+          locale: "en-US",
           minimumFractionDigits: 2,
           suffix: ' x',
         }
@@ -72,6 +89,7 @@ const columns = computed(() => {
         component: InputNumber,
         args: {
           mode: 'currency',
+          locale: "en-US",
           currency: 'USD'
         }
       },

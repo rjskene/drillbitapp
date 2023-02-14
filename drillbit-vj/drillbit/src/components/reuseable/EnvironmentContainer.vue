@@ -4,12 +4,13 @@ import { storeToRefs } from 'pinia'
 
 import CrudBar from './CrudBar.vue'
 
-import { useInputStore} from '@/stores/modules'
 
-const store = useInputStore()
+import { useEnvironmentStore} from '@/stores/modules'
+
+
+const store = useEnvironmentStore()
 
 const { lockable, locked } = storeToRefs(store)
-
 
 const props = defineProps({
   name: {
@@ -22,6 +23,10 @@ const props = defineProps({
   },
 })
 
+const formValid = computed(() => {
+  console.log('form', form.value.errors)
+  return form.value.errors.length === 0
+})
 const inputLocked = computed(() => {
   return locked.value[props.name]
 })
@@ -32,8 +37,8 @@ const inputLockable = computed(() => {
 const form = ref(null)
 
 const lock = async () => {
-  let res = await form.value.validate()
-  if (inputLockable.value & res.valid) {
+  console.log('lockable', inputLockable.value, formValid.value)
+  if (inputLockable.value & formValid.value) {
     store.$patch(() => {
       store.locked[props.name] = true
     })
@@ -51,21 +56,22 @@ const unlock = () => {
     <v-row class="">
       <v-col cols="12">
         <v-row>
-          <v-col cols="1" class="pl-6">
-            <CrudBar
-              @lock="lock"
-              @unlock="unlock"
-              :locked="inputLocked"
-              :lock-disabled="!inputLockable"
-              :save-disabled="inputLocked"
-              :on-save="onSave"
-            />
+          <v-col cols="1" class="pl-6 pr-0 mr-0">
+          
           </v-col>
           <v-col cols="11" class="ml-0 pl-0">
             <v-form ref="form">
               <v-sheet
                 class="d-flex justify-space-between align-center"
               >
+                <CrudBar
+                  @lock="lock"
+                  @unlock="unlock"
+                  :locked="inputLocked"
+                  :lock-disabled="!inputLockable"
+                  :save-disabled="inputLocked"
+                  :on-save="onSave"
+                />
                 <slot name="fields"></slot>
               </v-sheet>
             </v-form>

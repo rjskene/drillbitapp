@@ -30,7 +30,7 @@ const { locked } = toRefs(props)
 
 const btnProps = {
   elevation: "0",
-  size: "large",
+  size: "small",
   variant: "flat",
   density: "compact",
 }
@@ -62,7 +62,7 @@ const unlock = () => {
     </v-sheet>
     <v-sheet>
       <StatefulBtn
-        @click="onSave"
+        @click="props.onSave"
         v-bind="btnProps"
         :disabled="saveDisabled"
         icon="mdi-content-save"

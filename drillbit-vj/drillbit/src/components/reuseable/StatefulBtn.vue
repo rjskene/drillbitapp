@@ -32,15 +32,22 @@ const state = ref(null)
 const success = ref(false)
 const error = ref(false)
 
+const objectIsAsyncState = (obj) => {
+  return obj.hasOwnProperty('state') 
+    && obj.hasOwnProperty('isLoading') 
+    && obj.hasOwnProperty('isReady')
+    && obj.hasOwnProperty('error')
+}
+
 const onClick = () => {
   state.value = props.onClick()
-  if (!state.value instanceof useAsyncState) { 
+  if (!objectIsAsyncState(state.value)) {
     state.value = useAsyncState(
-      onClickResult,
+      state.value,
       {},
       {
         onError: (error) => {
-          console.error(error.response)
+          console.error(error.response ?? error)
         }
       }
     )

@@ -44,9 +44,9 @@ export function useFormatHelpers() {
       return null
   }
   const power = (value) => {
-    let units = ['W', 'KW', 'MW', 'GW', 'TW', 'PW']
+    let units = ['W', 'kW', 'MW', 'GW', 'TW', 'PW']
     let i = 0
-    while (value > 1000) {
+    while (value >= 1000) {
       value = value/1000
       i++
     }
@@ -144,7 +144,7 @@ export function useFormHelpers() {
 export function useEnviroForm ({createFunc, createState, params}){
   const every_nth = (arr, nth) => arr.filter((e, i) => i % nth === nth - 1)
   const getOrCreate = () => {
-    createState.value = useAsyncState(
+    createState = useAsyncState(
       createFunc({
         params: params.value,
       }),
@@ -155,20 +155,21 @@ export function useEnviroForm ({createFunc, createState, params}){
         }
       }
     )
-    return createState.value
+    return createState
   }
   return {
-    createState,
     getOrCreate,
     every_nth
   }
 }
 
-export function useForecastForm ({blocks, initial, mean, volatility, model, createFunc}){
+export function useForecastForm ({
+  blocks, initial, mean, volatility, model, 
+  createFunc,
+  createState,
+  }){
   const globalState = useGlobalStateStore()
   const models = globalState.allowedTimeSeriesModels
-  
-  const createState = ref(null)
   
   const createParams = computed (() => {
     return {
@@ -300,7 +301,7 @@ export function useObjectManager ({store}) {
   watchEffect(() => {
     if (isReady.value) {
       objects.value = store.objects
-    }
+    }``
   })
   const { history, undo, redo } = useRefHistory(objects, {deep: true})
 

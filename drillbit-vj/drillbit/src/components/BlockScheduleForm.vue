@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, defineExpose, watch, watchEffect} from 'vue'
 import { storeToRefs } from 'pinia'
-import { useAsyncState } from '@vueuse/core'
 import Skeleton from 'primevue/skeleton'
 
 import EnvironmentContainer from './reuseable/EnvironmentContainer.vue'
@@ -36,7 +35,6 @@ const enviroForm = useEnviroForm({createFunc: store.createObjects, createState, 
     :name="store.$id.replace('Store', '')"
     :on-save="enviroForm.getOrCreate"
   >
-    
     <template #fields>
       <v-text-field
         v-model="startDate"
@@ -56,8 +54,8 @@ const enviroForm = useEnviroForm({createFunc: store.createObjects, createState, 
       />
     </template> 
     <template #chart>
-      <Skeleton v-if="enviroForm.createState?.isLoading" width="100%" height="500px"></Skeleton>
-      <PlaceholderChart v-else-if="!enviroForm.createState?.isLoading && !store.object?.data"></PlaceholderChart>
+      <Skeleton v-if="createState?.isLoading" width="100%" height="500px"></Skeleton>
+      <PlaceholderChart v-else-if="!createState?.isLoading && !store.object?.data"></PlaceholderChart>
       <Chart 
         v-else-if="store.object?.data"
         :data="enviroForm.every_nth(store.object.data, 1000)"

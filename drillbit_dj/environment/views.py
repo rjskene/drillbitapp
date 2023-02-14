@@ -5,9 +5,9 @@ from rest_framework.response import Response
 from .apps import btc
 
 from .models import BlockSchedule, BitcoinPrice, \
-    TransactionFees, HashRate
+    TransactionFees, HashRate, Environment
 from .serializers import BlockScheduleSerializer, BitcoinPriceSerializer, \
-    TransactionFeesSerializer, HashRateSerializer
+    TransactionFeesSerializer, HashRateSerializer, EnvironmentSerializer
 
 class EnvironmentViewSetMixin:
     def _finish_create(self, data):
@@ -65,3 +65,11 @@ class HashRateViewSet(EnvironmentViewSetMixin, viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):     
         assert not isinstance(request.data, list), 'Bulk create not supported'
         return self._finish_create(request.data)
+
+class EnvironmentViewSet(viewsets.ModelViewSet):
+    serializer_class = EnvironmentSerializer
+    queryset = Environment.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        print (request.data)
+        return super().create(request, *args, **kwargs)

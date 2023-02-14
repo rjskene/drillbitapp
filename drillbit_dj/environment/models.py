@@ -29,7 +29,6 @@ ENVIRONMENT_MODELS = (
 class EnvironmentSchedule(ScheduleModel):
     class Meta:
         abstract = True
-        unique_together = ('initial', 'mean', 'volatility', 'model', 'blocks')
 
     blocks = models.ForeignKey(BlockSchedule, on_delete=models.PROTECT)
     model = models.CharField(max_length=20, choices=ENVIRONMENT_MODELS)
@@ -48,3 +47,11 @@ class TransactionFees(EnvironmentSchedule):
 
 class HashRate(EnvironmentSchedule):
     pass
+
+class Environment(ProjectModel):
+    name = models.CharField(max_length=100)
+    
+    block_schedule = models.ForeignKey(BlockSchedule, on_delete=models.PROTECT)
+    bitcoin_price = models.ForeignKey(BitcoinPrice, on_delete=models.PROTECT)
+    transaction_fees = models.ForeignKey(TransactionFees, on_delete=models.PROTECT)
+    hash_rate = models.ForeignKey(HashRate, on_delete=models.PROTECT)

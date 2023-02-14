@@ -19,7 +19,13 @@ export const useGlobalStateStore = defineStore('globalState', () => {
     {'title': 'GBM'},  
   ]
 
+  const infraTypes = [
+    {'title': 'Cooling', 'value': 'cooling'},
+    {'title': 'Heat Rejection', 'value': 'heatrejection'},
+    {'title': 'Electrical', 'value': 'electrical'},
+  ]
+
   return { 
-    drawer, routes, allowedTimeSeriesModels
+    drawer, routes, allowedTimeSeriesModels, infraTypes
   }
 })

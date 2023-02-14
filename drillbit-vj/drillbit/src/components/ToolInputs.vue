@@ -1,8 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { storeToRefs } from 'pinia'
 
+import StatefulBtn from './reuseable/StatefulBtn.vue'
 import ProjectForm from './ProjectForm.vue'
-
 import BlockScheduleForm from './BlockScheduleForm.vue'
 import BTCPriceForm from './BTCPriceForm.vue'
 import TransactionFeesForm from './TransactionFeesForm.vue'
@@ -10,12 +11,22 @@ import NetworkHashRateForm from './NetworkHashRateForm.vue'
 
 import { 
   useBlockScheduleStore, useBTCPriceStore, useFeeStore, useHashRateStore,
-  useProjectStore, useInputStore,
+  useProjectStore, useEnvironmentStore, useProjectsStore,
 } from '../stores/modules'
+import { useFormHelpers } from '../services/composables'
 
 const projectStore = useProjectStore()
-const inputStore = useInputStore()
+const projectsStore = useProjectsStore()
+const environmentStore = useEnvironmentStore()
+const formHelpers = useFormHelpers()
+
+const { projects } = storeToRefs(projectStore)
+const { environment } = storeToRefs(environmentStore)
+
 const activeElement = ref(0)
+const activeProject = computed(() => {
+  return activeElement.value - 5
+})
 
 const enviroElements = [
   {text: 'Block Schedule', value: 0, form: BlockScheduleForm, store: useBlockScheduleStore()},
@@ -27,29 +38,40 @@ const enviroElements = [
 const readyOrNot = (item) => {
   if (item.store) {
     return {
-      icon: inputStore.locked[item.store.$id.replace('Store', '')] ? 'mdi-check' : 'mdi-close',
-      color: inputStore.locked[item.store.$id.replace('Store', '')] ? 'secondary' : 'error'
+      icon: environmentStore.locked[item.store.$id.replace('Store', '')] ? 'mdi-check' : 'mdi-close',
+      color: environmentStore.locked[item.store.$id.replace('Store', '')] ? 'secondary' : 'error'
     }
   }
   return {}
 }
-const projectFormProps = computed(() => {
-  if (activeElement.value > 4) {
-    return {
-      project: projectStore.projects[activeElement.value - 5]
-    }
-  }
-  return null
-})
-const deleteProject = (index) => {
-  projectStore.$patch((state) => {
-    state.projects.pop(index)
-  })
+const loadEnvironment = (params) => {
+  if (typeof params === 'string' || params instanceof String)
+    environmentStore.$patch((state) => {
+      state.environment.name = params
+    })
+  else
+    environmentStore.load(params)
+}
+const loadProjects = (params) => {
+  if ((typeof params === 'string' || params instanceof String))
+    projectsStore.$patch((state) => {
+      state.object = {name: params}
+    })
+  else if (params)
+    projectsStore.load(params)
+}
+const copyProject = (project) => {
+  const {['id']: _, ...params} = project
+  projectStore.create(params)
+}
+
+const removeKeyFromObject = (obj, key) => {
+
 }
 </script>
 
 <template>
-  <v-container fluid class="">
+  <v-container fluid>
     <v-row>
       <v-col cols="2">
         <v-list
@@ -57,6 +79,25 @@ const deleteProject = (index) => {
           density="compact"
         >
           <v-list-subheader class="text-subtitle-1">Environment</v-list-subheader>
+          <v-combobox
+            @update:modelValue="(params) => loadEnvironment(params)"
+            :items="environmentStore.objects"
+            item-title="name"
+            density="compact"
+            outlined
+            clearable
+            class="mt-0"
+          >
+          <template #append>
+            <StatefulBtn
+              @click="environmentStore.save"
+              variant="flat"
+              icon="mdi-content-save"
+              size="small"
+              :disabled="!environmentStore.allLocked"
+            />
+            </template>
+          </v-combobox>
           <v-list-item
             v-for="item in enviroElements"
             @click="activeElement = item.value"
@@ -74,6 +115,24 @@ const deleteProject = (index) => {
           <!-- use subheader as spacer -->
           <v-list-subheader class="mt-1"></v-list-subheader>
           <v-list-subheader class="text-subtitle-1">Projects</v-list-subheader>
+          <v-combobox
+            @update:modelValue="(params) => loadProjects(params)"
+            :items="projectsStore.objects"
+            item-title="name"
+            density="compact"
+            outlined
+            clearable
+            class="mt-0"
+          >
+          <template #append>
+            <StatefulBtn
+              @click="projectsStore.save"
+              variant="flat"
+              icon="mdi-content-save"
+              size="small"
+            />
+            </template>
+          </v-combobox>
           <v-list-item
             @click="activeElement = 4"
             key="create-project"
@@ -83,7 +142,7 @@ const deleteProject = (index) => {
             Create Project
           </v-list-item>
           <v-list-item
-            v-for="(project, i) in projectStore.projects"
+            v-for="(project, i) in projects"
             @click="activeElement = 4 + i + 1"
             :key="'project' + i"
             :value="4 + i + 1"
@@ -91,8 +150,16 @@ const deleteProject = (index) => {
             {{ project.name }}
             <template #append>
               <v-btn
-                @click="deleteProject(i)"
+                @click="projectStore.del(project.id)"
                 icon="mdi-delete"
+                elevation="0"
+                size="x-small"
+                class="mx-0"
+                variant="flat"
+              />
+              <v-btn
+                @click="copyProject(project)"
+                icon="mdi-content-copy"
                 elevation="0"
                 size="x-small"
                 class="mx-0"
@@ -108,17 +175,19 @@ const deleteProject = (index) => {
           :is="enviroElements[activeElement].form"
         />
         <ProjectForm
-          v-else-if="projectFormProps === null"
+          v-else-if="activeElement === 4"
         />
         <ProjectForm
           v-else
-          v-bind="projectFormProps"
+          :project="projects[activeProject]"
         />
       </v-col>
     </v-row>
   </v-container>
 </template>
   
-  
 <style scoped>
+:deep(.v-combobox > .v-input__append) {
+  padding: 0;
+}
 </style>
