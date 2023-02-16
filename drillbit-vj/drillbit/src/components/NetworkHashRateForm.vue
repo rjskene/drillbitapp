@@ -81,6 +81,7 @@ const forecast = computed(() => {
       <Chart 
         v-else-if="store.object?.data"
         :data="forecast.enviroForm.every_nth(store.object.data, 1000)"
+        label="Network Hash Rate"
         x-label="period"
         y-label="forecast"
         x-tick-prefix=""

@@ -59,6 +59,7 @@ const enviroForm = useEnviroForm({createFunc: store.createObjects, createState, 
       <Chart 
         v-else-if="store.object?.data"
         :data="enviroForm.every_nth(store.object.data, 1000)"
+        label="Block Schedule"
         x-label="period"
         y-label="reward"
       />

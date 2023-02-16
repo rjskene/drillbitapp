@@ -9,6 +9,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  label: {
+    type: String,
+    default: null,
+  },
   xLabel: {
     type: String,
     required: true,
@@ -50,7 +54,7 @@ const chartData = computed(() => {
   let chartData = {
     labels: labels.value,
     datasets: [{
-      label: 'Block Reward',
+      label: props.label,
       data: data.value.map((object) => object[yLabel.value]),
       // backgroundColor: vuetify.theme.themes.value.light.colors.green,
     }]
