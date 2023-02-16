@@ -23,7 +23,7 @@ const coolingStore = useCoolingStore()
 const rejectionStore = useRejectionStore()
 const electricalStore = useElectricalStore()
 
-const { nameRules, numberRules } = useFormHelpers()
+const { nameRules, numberRules, percentageRules } = useFormHelpers()
 const format = useFormatHelpers()
 
 const props = defineProps({
@@ -54,6 +54,7 @@ const projectStructure = computed(() => {
       density: 'compact',
       required: true,
       rules: numberRules.value,
+      default: 40000000,
     }, 
     energy_price: {
       label: 'Energy Price',
@@ -61,7 +62,7 @@ const projectStructure = computed(() => {
       density: 'compact',
       required: true,
       rules: numberRules.value,
-      default: 0.05,
+      default: 0.00005,
     }, 
     'target_overclocking': {
       label: 'Overclocking',
@@ -78,6 +79,14 @@ const projectStructure = computed(() => {
       required: true,
       rules: numberRules.value,
       default: 96,
+    },
+    'pool_fees': {
+      label: 'Pool Fees',
+      suffix: '%',
+      density: 'compact',
+      required: true,
+      rules: percentageRules.value,
+      default: 0.025,
     },
     rigs: {
       label: 'Rigs',
@@ -156,6 +165,12 @@ const addRigs = () => {
 const updateRigId = (index, id) => {
   project.value.rigs[index].rig_id = id
 }
+const deleteItemFromArrayBasedOnIndex = (array, index) => {
+  array.splice(index, 1)
+}
+const deleteRig = (index, pk) => {
+  project.value.rigs.splice(index, 1)
+}
 const addInfrastructure = () => {
   project.value.infrastructure.push({infra_content_type: 'cooling', infra_object_id: null})
 }
@@ -166,6 +181,10 @@ const updateInfraType = (index, type) => {
 const updateInfraObjectId = (index, id) => {
   project.value.infrastructure[index].infra_object_id = id
 }
+const deleteInfra = (index, pk) => {
+  project.value.infrastructure.splice(index, 1)
+}
+
 watch(() => props.project, (newVal) => {
   project.value = newVal || createNewProject()
 })
@@ -181,7 +200,7 @@ const updateCosts = (pk) => {
 <template>
   <v-card 
     elevation=0
-    class="border"
+    class="border rounded-xl"
   >
     <v-form>
       <v-card-title>{{ project?.name }}</v-card-title>
@@ -246,6 +265,17 @@ const updateCosts = (pk) => {
             v-model="project.target_ambient_temp"
           />
         </v-sheet>
+        <v-sheet
+          class="d-flex flex-column justify-space-between"
+          min-width="200"
+        >
+        <v-text-field
+          v-bind="projectStructure.pool_fees"
+          @update:model-value="(val) => project.pool_fees = val/100"
+          :model-value="project.pool_fees*100"
+        />
+        <v-text-field :disabled="true" label="Nil" default=""></v-text-field>
+        </v-sheet>
       </v-sheet>
       <v-divider></v-divider>
       <v-card-subtitle class="my-3">Rigs</v-card-subtitle>
@@ -255,6 +285,7 @@ const updateCosts = (pk) => {
           <ProjectFormRigSection
             :object-id="project.rigs[i]['rig_id']"
             @update:object-id="(id) => updateRigId(i, id)"
+            @delete="(id) => deleteRig(i, id)"
             density="compact"
           />
         </div>
@@ -269,6 +300,7 @@ const updateCosts = (pk) => {
             :object-id="project.infrastructure[i].infra_object_id"
             @update:type="(type) => updateInfraType(i, type)"
             @update:object-id="(id) => updateInfraObjectId(i, id)"
+            @delete="(id) => deleteInfra(i, id)"
             density="compact"
           />
         </div>
@@ -330,14 +362,14 @@ const updateCosts = (pk) => {
   
   
 <style scoped>
-:deep(.inline) {
+/* :deep(.inline) {
   display: inline;
 }
 :deep(.v-field__input) {
   min-height: 0px;
   max-height: 12px;
-}
-:deep(.v-field-label) {
+} */
+/* :deep(.v-field-label) {
   top: 0px;
 }
 :deep(.v-field-label--floating) {
@@ -370,5 +402,5 @@ const updateCosts = (pk) => {
   padding-top: 3px;
   padding-bottom: 0px;
   padding-right: 0px;
-}
+} */
 </style>

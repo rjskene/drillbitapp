@@ -2,17 +2,29 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
+from drillbit.__new_objects import RigOperator, CoolingOperator, HeatRejectionOperator, \
+    ElectricalOperator, Project as ProjectManager
+
 from drillbit_dj.project import ProjectModel
-from products.models import Rig
+from products.models import Rig, Cooling, HeatRejection, Electrical
 
 class RigForProject(ProjectModel):
     project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='rigs')
     rig = models.ForeignKey(Rig, on_delete=models.PROTECT)
     quantity = models.FloatField('Quantity', null=True)
+    amortization = models.FloatField('Amortization', default=60)
+
+    def as_drillbit_object(self):
+        return RigOperator(
+            product=self.rig.as_drillbit_object(), 
+            quantity=self.quantity, 
+            overclocking=self.project.target_overclocking
+        )
 
 class InfraForProject(ProjectModel):
     project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='infrastructure')
     quantity = models.FloatField('Quantity', null=True)
+    amortization = models.FloatField('Amortization', default=60)
 
     infra_content_type = models.ForeignKey(
         ContentType,
@@ -24,6 +36,25 @@ class InfraForProject(ProjectModel):
         'infra_object_id',
     )
 
+    def as_drillbit_object(self):
+        if self.infrastructure is None:
+            raise ValueError('`infrastructure` must be set')
+        elif isinstance(self.infrastructure, Cooling):
+            return CoolingOperator(
+                product=self.infrastructure.as_drillbit_object(),
+                quantity=self.quantity,
+            )
+        elif isinstance(self.infrastructure, HeatRejection):
+            return HeatRejectionOperator(
+                product=self.infrastructure.as_drillbit_object(),
+                quantity=self.quantity,
+            )
+        elif isinstance(self.infrastructure, Electrical):
+            return ElectricalOperator(
+                product=self.infrastructure.as_drillbit_object(),
+                quantity=self.quantity,
+            )
+
 class Project(ProjectModel):
     name = models.CharField('Name', max_length=100)
     description = models.TextField('Description', blank=True, null=True)
@@ -31,6 +62,7 @@ class Project(ProjectModel):
     target_ambient_temp = models.FloatField('Target Ambient Temperature', default=95)
     target_overclocking = models.FloatField('Target Overclock Factor', default=1)
     energy_price = models.FloatField('Energy Price')
+    pool_fees = models.FloatField('Pool Fees', default=0)
 
     def add_rig(self, rig, quantity=None, *args, **kwargs):
         return RigForProject.objects.create(
@@ -63,6 +95,17 @@ class Project(ProjectModel):
             infra_content_type=infra_content_type,
             infra_object_id=infra_object_id,
             quantity=quantity,
+        )
+
+    def as_drillbit_object(self):
+        return ProjectManager(
+            name=self.name,
+            capacity=self.capacity,
+            target_ambient_temp=self.target_ambient_temp,
+            target_overclocking=self.target_overclocking,
+            energy_price=self.energy_price,
+            rigs=[rig.as_drillbit_object() for rig in self.rigs.all()],
+            infrastructure=[infra.as_drillbit_object() for infra in self.infrastructure.all()],
         )
 
 class Projects(ProjectModel):

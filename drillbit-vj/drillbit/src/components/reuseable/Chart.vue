@@ -13,6 +13,14 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  xTickPrefix: {
+    type: String,
+    default: '\u20BF ',
+  },
+  xTickSuffix: {
+    type: String,
+    default: '',
+  },
   yLabel: {
     type: String,
     required: true,
@@ -84,7 +92,7 @@ const chartOptions = {
       },
       ticks: { 
         // color: dark.colors['blue-lighten-4'],
-        callback: (value, index, ticks) => '\u20BF ' + value,
+        callback: (value, index, ticks) => props.xTickPrefix + value + props.xTickSuffix,
       }
     }
   }

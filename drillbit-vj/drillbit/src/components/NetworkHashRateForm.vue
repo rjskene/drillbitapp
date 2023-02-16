@@ -83,6 +83,8 @@ const forecast = computed(() => {
         :data="forecast.enviroForm.every_nth(store.object.data, 1000)"
         x-label="period"
         y-label="forecast"
+        x-tick-prefix=""
+        x-tick-suffix="M TH/s"
       />
     </template>
   </EnvironmentContainer>

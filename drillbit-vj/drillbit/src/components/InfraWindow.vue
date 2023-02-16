@@ -80,6 +80,20 @@ const columns = computed(() => {
       },
     },
     {
+      field: 'number_of_rigs',
+      header: 'Rigs',
+      headerClass: 'table-header-center',
+      bodyClass: 'table-body-center min-col-width-2dot5',
+      editor: {
+        component: InputNumber,
+        args: {
+          mode: 'decimal',
+          locale: "en-US",
+          minimumFractionDigits: 2,
+        }
+      },
+    },
+    {
       field: 'price',
       header: 'Price',
       headerClass: 'table-header-center',
@@ -150,7 +164,6 @@ watch(currentTab, (currentTab, oldVal) => {
       </v-window>
   </v-card>
 </template>
-  
   
 <style scoped>
 :deep(.tab-color-surface) {

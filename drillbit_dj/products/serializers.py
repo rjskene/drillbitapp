@@ -30,7 +30,8 @@ class CoolingSerializer(serializers.ModelSerializer):
             'name', 
             'power',
             'pue',
-            'price'
+            'price',
+            'number_of_rigs',
         )
         list_serializer_class = ProjectListSerializer
             

@@ -88,6 +88,9 @@ class BitcoinPriceSerializer(
         list_serializer_class = ProjectListSerializer
         validators = []  # Removes the "unique together" constraint.
 
+    def to_schedule(self):
+        return pd.DataFrame(self.data['data'])
+
 class TransactionFeesSerializer(
     BitcoinUtilityInitMixin,
     EnvironmentCreateMixin, 
@@ -105,6 +108,9 @@ class TransactionFeesSerializer(
         list_serializer_class = ProjectListSerializer
         validators = []  # Removes the "unique together" constraint.
 
+    def to_schedule(self):
+        return pd.DataFrame(self.data['data'])
+
 class HashRateSerializer(
     BitcoinUtilityInitMixin,
     EnvironmentCreateMixin, 
@@ -121,6 +127,9 @@ class HashRateSerializer(
         )
         list_serializer_class = ProjectListSerializer
         validators = []  # Removes the "unique together" constraint.
+
+    def to_schedule(self):
+        return pd.DataFrame(self.data['data'])
 
 class EnvironmentSerializer(serializers.ModelSerializer):
     block_schedule = serializers.PrimaryKeyRelatedField(queryset=BlockSchedule.objects.all())

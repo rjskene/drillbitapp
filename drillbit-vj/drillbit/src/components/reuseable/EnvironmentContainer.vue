@@ -24,7 +24,6 @@ const props = defineProps({
 })
 
 const formValid = computed(() => {
-  console.log('form', form.value.errors)
   return form.value.errors.length === 0
 })
 const inputLocked = computed(() => {
@@ -37,7 +36,6 @@ const inputLockable = computed(() => {
 const form = ref(null)
 
 const lock = async () => {
-  console.log('lockable', inputLockable.value, formValid.value)
   if (inputLockable.value & formValid.value) {
     store.$patch(() => {
       store.locked[props.name] = true

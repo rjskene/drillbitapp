@@ -12,7 +12,7 @@
   
   
 <template>
-  <v-card class="ma-10 pa-0 rounded-lg" min-height="1200px">
+  <v-card class="ma-10 pa-0 rounded-xl" min-height="1200px">
     <v-tabs
       v-model="currentTab"
       bg-color="background"

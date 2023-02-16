@@ -125,6 +125,15 @@ export function useFormHelpers() {
     ]
     return rules
   })
+  const percentageRules = computed(() => {
+    // array with two rules, second rule checks if value is a number
+    let rules = [
+      v => v != null ? true : 'Value is required',
+      v => isValidNumber(v) || 'Must be a number',
+      v => v >= 0 && v <= 100 || 'Must be between 0 and 1'
+    ]
+    return rules
+  })
   const numberIfNotNullRules = computed(() => {
     // array with two rules, second rule checks if value is a number
     let rules = [
@@ -137,7 +146,7 @@ export function useFormHelpers() {
     ]
   })
   return {
-    nameRules, startDateRules, endDateRules, numberRules
+    nameRules, startDateRules, endDateRules, numberRules, percentageRules
   }
 }
 

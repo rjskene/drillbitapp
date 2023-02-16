@@ -22,6 +22,7 @@ class RigForProjectSerializer(serializers.ModelSerializer):
             'id', 
             'project',
             'quantity',
+            'amortization',
             'rig', 
             'rig_id'
         )
@@ -57,6 +58,7 @@ class InfraForProjectSerializer(serializers.ModelSerializer):
             'id', 
             'project',
             'quantity',
+            'amortization',
             'infrastructure',
             'infra_content_type', 
             'infra_object_id',
@@ -77,6 +79,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             'energy_price',
             'target_ambient_temp',
             'target_overclocking',
+            'pool_fees',
             'rigs', 'infrastructure'
         )
         list_serializer_class = ProjectListSerializer
@@ -103,6 +106,12 @@ class ProjectSerializer(serializers.ModelSerializer):
             .filter(pk=project.pk) \
             .update(**validated_data)
 
+        # delete rigs and infra that are not in the list
+        RigForProject.objects \
+            .filter(project=project) \
+            .exclude(id__in=[rig_data['id'] for rig_data in rigs_data if 'id' in rig_data]) \
+            .delete()
+
         for rig_data in rigs_data:
             if 'id' not in rig_data:
                 rig_data['rig'] = rig_data.pop('rig_id')
@@ -114,6 +123,12 @@ class ProjectSerializer(serializers.ModelSerializer):
                     .filter(pk=pk) \
                     .update(**rig_data)
 
+        # delete infra that are not in the list
+        InfraForProject.objects \
+            .filter(project=project) \
+            .exclude(id__in=[infra_data['id'] for infra_data in infra_data if 'id' in infra_data]) \
+            .delete()
+        
         for infra_data in infra_data:
             if 'id' not in infra_data:
                 project.add_infra(**infra_data)

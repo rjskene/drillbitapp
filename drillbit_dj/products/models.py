@@ -1,7 +1,8 @@
 from django.db import models
 from django.forms.models import model_to_dict
 
-from drillbit.__new_objects import Rig as RigManager, Product as ProductManager, Cooler as CoolerManager
+from drillbit.__new_objects import Rig as RigManager, Product as ProductManager, \
+    Cooling as CoolingManager, HeatRejection as HeatRejectionManager
 from drillbit_dj.project import ProjectModel
 
 class AbstractBaseRig(ProjectModel):
@@ -62,11 +63,13 @@ class AbstractBaseInfrastructure(ProjectModel):
     price = models.FloatField('Price')
 
 class Cooling(AbstractBaseInfrastructure):
+    number_of_rigs = models.FloatField('Number of rigs', default=None, null=True)
+
     def as_drillbit_object(self):
         kwargs = model_to_dict(self)
         kwargs.pop('id')
 
-        return ProductManager(**kwargs)
+        return CoolingManager(**kwargs)
 
 class RejectionCurve(models.Model):
     """
@@ -86,7 +89,7 @@ class HeatRejection(AbstractBaseInfrastructure):
         curve = RejectionCurve.objects.get(pk=kwargs['curve'])
         kwargs['curve'] = (curve.a, curve.b)
 
-        return CoolerManager(**kwargs)
+        return HeatRejectionManager(**kwargs)
 
 class Electrical(AbstractBaseInfrastructure):
     def as_drillbit_object(self):
