@@ -1,7 +1,8 @@
 import { ref, computed, watch } from 'vue'
-import { defineStore } from 'pinia'
+import { defineStore, storeToRefs } from 'pinia'
 
 import client from '../services/client'
+import { useGlobalStateStore } from './globalState'
 
 export const productPlugin = ({store}) => {
   if (!Object.prototype.hasOwnProperty(store.$state, 'object')) {
@@ -40,7 +41,7 @@ export const productPlugin = ({store}) => {
         store.objects = result.data
       else
         store.object = result.data
-    })
+      })
   }
   store.createObject = async ({params}) => {
     return client.createObject({
@@ -81,6 +82,9 @@ export const productPlugin = ({store}) => {
   store.findObjectById = (id) => {
     return store.objects.find((obj) => obj.id === id)
   }
+  store.resetObject = () => {
+    store.object = null
+  }
 }
 
 export const useRigStore = defineStore('rigStore', () => {
@@ -109,31 +113,85 @@ export const useElectricalStore = defineStore('electricalStore', () => {
   return { app, dataModel }
 })
 
+import { getTodayAsString, useFormHelpers, useEnviroForm } from '../services/composables'
+const {nameRules, numberRules, numberIfNotNullRules, startDateRules, endDateRules} = useFormHelpers()
+
 export const useBlockScheduleStore = defineStore('blockScheduleStore', () => {
+  
   const app = 'environment'
   const dataModel = 'block-schedule'
-  
-  return { app, dataModel }
+
+  const formParams = ref({start_date: getTodayAsString(), last_epoch: 5})
+  const createParams = formParams
+
+  const formFields = [
+    { name: 'start_date', label: 'Start', rules: startDateRules },
+    { name: 'last_epoch', label: 'End', hint: 'Date or Epoch', rules: endDateRules },
+  ]
+
+  return { app, dataModel, formParams, createParams, formFields }
   
 })
+function useForecastModelForm() {
+  const blockStore = useBlockScheduleStore()
+
+  const formParams = ref({
+    model: 'GBM',
+    initial: 20000,
+    mean: .000025,
+    volatility: .0025,
+
+  })
+  const createParams = computed(() => {
+    const params = {...formParams.value}
+    params.blocks = blockStore.object?.id
+    return params
+  })
+  const globalState = useGlobalStateStore()
+  const models = globalState.allowedTimeSeriesModels
+
+  const formFields = [
+    { name: 'model', label: 'Model', items: models, type: 'select' },
+    { name: 'initial', label: 'Initial', prefix: '$', rules: numberRules },
+    { 
+      name: 'mean', 
+      label: 'Mean', 
+      rules: numberIfNotNullRules,
+      disabled: computed(() => formParams.value.model === 'Constant') 
+    },
+    { 
+      name: 'volatility', 
+      label: 'Volatility',
+      rules: numberIfNotNullRules,
+      disabled: computed(() => formParams.value.model === 'Constant' || formParams.value.model === 'CGR') 
+    },
+  ]
+  return { formParams, createParams, formFields }
+}
+
 export const useBTCPriceStore = defineStore('btcPriceStore', () => {
   const app = 'environment'
   const dataModel = 'bitcoin-price'
-  
-  return { app, dataModel }
+  const { formParams, createParams, formFields } = useForecastModelForm()
 
+  return { app, dataModel, formParams, createParams, formFields }
 })
 export const useFeeStore = defineStore('feeStore', () => {
   const app = 'environment'
   const dataModel = 'transaction-fees'
-  
-  return { app, dataModel }
+  const { formParams, createParams, formFields } = useForecastModelForm()
+  formFields[1].prefix = '\u20BF'
+
+  return { app, dataModel, formParams, createParams, formFields }
 })
 export const useHashRateStore = defineStore('hashRateStore', () => {
   const app = 'environment'
   const dataModel = 'hash-rate'
-  
-  return { app, dataModel }
+  const { formParams, createParams, formFields } = useForecastModelForm()
+  formFields[1].prefix = ''
+  formFields[1].suffix = 'M TH/s'
+
+  return { app, dataModel, formParams, createParams, formFields }
 })
 export const useProjectStore = defineStore('projectStore', () => {
   const app = 'projects'
@@ -188,13 +246,15 @@ export const useProjectsStore = defineStore('projectsStore', () => {
 
   const projectStore = useProjectStore()
   const object = ref(null)
-
   const load = async (params) => {
     let pk = params.id
-    let result = await client.getObjectsByPK({app, model: dataModel, pk})
-    object.value = result.data
-    projectStore.$patch((state) => {
-      state.projects = result.data.projects
+    return client
+      .getObjectsByPK({app, model: dataModel, pk})
+      .then((result) => {
+        object.value = result.data
+        projectStore.$patch((state) => {
+          state.projects = result.data.projects
+        })
     })
   }
   const save = async () => {
@@ -224,9 +284,6 @@ export const useEnvironmentStore = defineStore('environmentStore', () => {
     transaction_fees: feeStore,
     hash_rate: hashRateStore,
   }
-
-  const environment = ref({name: null})
-
   const components = computed(() => {
     return {
       block_schedule: blockScheduleStore.object?.id,
@@ -236,6 +293,10 @@ export const useEnvironmentStore = defineStore('environmentStore', () => {
     }
   })
 
+  const environment = ref({name: null})
+  const clear = () => {
+    environment.value = {name: null}
+  }
   const save = () => {
     let pk = environment.value?.id ?? null
     let params = {name: environment.value.name, ...components.value }
@@ -245,7 +306,6 @@ export const useEnvironmentStore = defineStore('environmentStore', () => {
         environment.value = result.data
       })
   }
-  
   const load = async (params) => {
     let pk = params.id
     let result = await client.getObjectsByPK({app, model: dataModel, pk})
@@ -257,10 +317,12 @@ export const useEnvironmentStore = defineStore('environmentStore', () => {
         pk: environment.value[key]
       }).then(result => {
         store.object = result.data
+        Object.keys(store.formParams).forEach((key) => {
+          store.formParams[key] = store.object[key]
+        })
       })
     })
   }
-
   const locked = ref({
     blockSchedule: false,
     btcPrice: false,
@@ -280,10 +342,16 @@ export const useEnvironmentStore = defineStore('environmentStore', () => {
       fee: locked.value.blockSchedule && feeStore.hasObject && feeStore.object?.blocks === blockScheduleStore.object?.id,
       hashRate: locked.value.blockSchedule && blockScheduleStore.hasObject && hashRateStore.object?.blocks === blockScheduleStore.object?.id,
   }})
+  const allLockable = computed(() => {
+    return blockScheduleStore.hasObject 
+      && btcPriceStore.hasObject && btcPriceStore.object?.blocks === blockScheduleStore.object?.id
+      && feeStore.hasObject && feeStore.object?.blocks === blockScheduleStore.object?.id
+      && blockScheduleStore.hasObject && hashRateStore.object?.blocks === blockScheduleStore.object?.id
+  })
   return {
     app, dataModel,
     environment, components, 
-    save, load,
-    lockable, locked, allLocked 
+    save, load, clear,
+    lockable, locked, allLocked, allLockable
   }
 })

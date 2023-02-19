@@ -58,11 +58,16 @@ class InfraForProject(ProjectModel):
 class Project(ProjectModel):
     name = models.CharField('Name', max_length=100)
     description = models.TextField('Description', blank=True, null=True)
+    
     capacity = models.FloatField('Capacity')
     target_ambient_temp = models.FloatField('Target Ambient Temperature', default=95)
     target_overclocking = models.FloatField('Target Overclock Factor', default=1)
     energy_price = models.FloatField('Energy Price')
+
     pool_fees = models.FloatField('Pool Fees', default=0)
+    tax_rate = models.FloatField('Tax Rate', default=0)
+    opex = models.FloatField('Opex', default=0)
+    property_taxes = models.FloatField('Property Taxes', default=0)
 
     def add_rig(self, rig, quantity=None, *args, **kwargs):
         return RigForProject.objects.create(
@@ -104,7 +109,7 @@ class Project(ProjectModel):
             target_ambient_temp=self.target_ambient_temp,
             target_overclocking=self.target_overclocking,
             energy_price=self.energy_price,
-            rigs=[rig.as_drillbit_object() for rig in self.rigs.all()],
+            rigs=[rig.as_drillbit_object() for rig in self.rigs.all()][0], # only use first rig for now
             infrastructure=[infra.as_drillbit_object() for infra in self.infrastructure.all()],
         )
 

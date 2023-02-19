@@ -15,7 +15,6 @@ class EnvironmentViewSetMixin:
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def get_serializer(self, *args, **kwargs):
@@ -35,8 +34,6 @@ class BlockScheduleViewSet(EnvironmentViewSetMixin, viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):     
         assert not isinstance(request.data, list), 'Bulk create not supported'
         data = request.data
-        data['start_date'] = dt.datetime.strftime(dt.datetime.strptime(data['start_date'], '%d/%m/%Y'), '%Y-%m-%d')
-
         return self._finish_create(data)
 
 class BitcoinPriceViewSet(EnvironmentViewSetMixin, viewsets.ModelViewSet):
@@ -69,7 +66,3 @@ class HashRateViewSet(EnvironmentViewSetMixin, viewsets.ModelViewSet):
 class EnvironmentViewSet(viewsets.ModelViewSet):
     serializer_class = EnvironmentSerializer
     queryset = Environment.objects.all()
-
-    def create(self, request, *args, **kwargs):
-        print (request.data)
-        return super().create(request, *args, **kwargs)

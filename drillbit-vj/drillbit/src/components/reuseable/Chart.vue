@@ -4,6 +4,10 @@ import { toRefs, computed } from 'vue'
 
 import { Line } from 'vue-chartjs'
 
+import { useFormatHelpers } from '../../services/composables'
+
+const format = useFormatHelpers()
+
 const props = defineProps({
   data: {
     type: Object,
@@ -31,7 +35,7 @@ const props = defineProps({
   },
   height: {
     type: Number,
-    default: 300
+    default: 900
   }
 })
 
@@ -44,11 +48,10 @@ const labels = computed(() => {
   )
   return labels
 })
-function formatDateTime(date) {
-  
-      if (!date) return 'NA'
-      const options = { year: 'numeric', month: 'short'}
-      return date.toLocaleString(undefined, options)
+function formatDateTime(date) {  
+    if (!date) return 'NA'
+    const options = { year: 'numeric', month: 'short'}
+    return date.toLocaleString(undefined, options)
 }
 const chartData = computed(() => {
   let chartData = {
@@ -96,7 +99,7 @@ const chartOptions = {
       },
       ticks: { 
         // color: dark.colors['blue-lighten-4'],
-        callback: (value, index, ticks) => props.xTickPrefix + value + props.xTickSuffix,
+        callback: (value, index, ticks) => props.xTickPrefix + format.numberWithCommas(value) + props.xTickSuffix,
       }
     }
   }

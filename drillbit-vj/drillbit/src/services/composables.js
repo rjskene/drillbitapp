@@ -18,9 +18,14 @@ export function hexToRGB (hex, opacity=null, asString=False) {
   else
     return rgb
 }
+export const every_nth = (arr, nth) => arr.filter((e, i) => i % nth === nth - 1)
+
 export function useFormatHelpers() {
   const percentage = (value) => {
     return (value*100).toFixed(2) + '%'
+  }
+  const numberWithCommas = (value) => {
+    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
   }
   const currency = (value, style='') => {
     let NF = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
@@ -55,7 +60,7 @@ export function useFormatHelpers() {
     else
       return null
   }
-  return { percentage, currency, hashRate, power }
+  return { percentage, numberWithCommas, currency, hashRate, power }
 }
 
 const format = useFormatHelpers()
@@ -65,7 +70,7 @@ export const dateAsString = (date) => {
   var mm = String(date.getMonth() + 1).padStart(2, '0'); //January is 0!
   var yyyy = date.getFullYear();
   
-  date = dd + '/' + mm + '/' + yyyy;
+  date = yyyy + '-' + mm + '-' + dd;
   return date  
 }
 export const getTodayAsString = () => {
@@ -73,8 +78,8 @@ export const getTodayAsString = () => {
   return dateAsString(today)
 }
 export const validateDateFormat = (string) => {
-  // string should be in format dd/mm/yyyy
-  const regex = new RegExp('^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[012])/[0-9]{4}$')
+  // string should be in format yyyy-mm-dd
+  const regex = new RegExp('^[0-9]{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$')
   return regex.test(string)
 }
 const isValidNumber = (v) => {

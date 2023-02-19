@@ -4,9 +4,7 @@ import { storeToRefs } from 'pinia'
 
 import CrudBar from './CrudBar.vue'
 
-
 import { useEnvironmentStore} from '@/stores/modules'
-
 
 const store = useEnvironmentStore()
 

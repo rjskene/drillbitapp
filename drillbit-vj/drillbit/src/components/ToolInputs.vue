@@ -34,7 +34,6 @@ const enviroElements = [
   {text: 'Transaction Fees', value: 2, form: TransactionFeesForm, store: useFeeStore()},
   {text: 'Network Hash Rate', value: 3, form: NetworkHashRateForm, store: useHashRateStore()}
 ]
-
 const readyOrNot = (item) => {
   if (item.store) {
     return {

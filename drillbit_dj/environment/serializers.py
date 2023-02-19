@@ -147,3 +147,6 @@ class EnvironmentSerializer(serializers.ModelSerializer):
             'transaction_fees', 
             'hash_rate'
         )
+
+class EnvironmentParamSerializer:
+    pass

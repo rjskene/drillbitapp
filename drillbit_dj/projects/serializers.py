@@ -80,7 +80,11 @@ class ProjectSerializer(serializers.ModelSerializer):
             'target_ambient_temp',
             'target_overclocking',
             'pool_fees',
-            'rigs', 'infrastructure'
+            'tax_rate',
+            'opex',
+            'property_tax',
+            'rigs', 
+            'infrastructure'
         )
         list_serializer_class = ProjectListSerializer
 
@@ -282,7 +286,6 @@ class ProductCostsRelatedField(serializers.RelatedField):
         """
         Serialize tagged objects to a simple textual representation.
         """
-        print (value)
         return value
 
 class ProjectCostsSerializer(serializers.ModelSerializer):
