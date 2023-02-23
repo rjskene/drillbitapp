@@ -1,14 +1,41 @@
+import json
 import pandas as pd
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
 from drillbit.__new_objects import Project as ProjectManager
+from drillbit.statements.statements import init_environment, ProjectTemplate, ROITemplate, \
+    analysis
 
 from drillbit_dj.project import ProjectListSerializer, GetOrCreateSerializerMixin
-from .models import RigForProject, InfraForProject, Project, Projects
 
+from .models import RigForProject, InfraForProject, Project, Projects, \
+    ProjectSimulation, ProjectStatement
+
+from environment.models import Environment
+from environment.serializers import JSONConversionField, BlockScheduleSerializer, BitcoinPriceSerializer, \
+    TransactionFeesSerializer, HashRateSerializer, BitcoinUtilityInitMixin
 from products.models import Rig, Cooling, HeatRejection, Electrical
 from products.serializers import RigSerializer, CoolingSerializer, HeatRejectionSerializer, ElectricalSerializer
+
+class StatementFromJSONConversionField(serializers.JSONField):
+    """
+    Color objects are serialized into 'rgb(#, #, #)' notation.
+    """
+    def to_representation(self, value, frequency='M'):
+        value = json.loads(value)
+        value = pd.DataFrame(value)
+
+        if frequency != 'M':
+            value.columns = pd.to_datetime(value.columns).to_period(freq='10 Min')
+            value = value.T.resample(frequency).sum().T
+            value.columns = value.columns.strftime('%Y-%m-%d %H:%M:%S')
+            
+        stat = {
+            'stat': value.reset_index().to_dict(orient='records'),
+            'columns': value.reset_index().columns.tolist()
+        }
+        return stat
 
 class RigForProjectSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(allow_null=True, required=False) # needs to be declared explicilty so it is not read-only and available for updates
@@ -82,7 +109,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             'pool_fees',
             'tax_rate',
             'opex',
-            'property_tax',
+            'property_taxes',
             'rigs', 
             'infrastructure'
         )
@@ -319,3 +346,124 @@ class ProjectCostsSerializer(serializers.ModelSerializer):
                 restructured_data['product'].append(product)
         
         return restructured_data
+
+class ProjectSimulationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectSimulation
+        fields = '__all__'
+        list_serializer_class = ProjectListSerializer
+
+    def create(self, validated_data):
+        obj, created = ProjectSimulation.objects.get_or_create(**validated_data)
+        return obj
+
+class ProjectStatementSerializer(
+    BitcoinUtilityInitMixin,
+    serializers.ModelSerializer
+):
+    environment = serializers.PrimaryKeyRelatedField(
+        source='sim.environment',
+        queryset=Environment.objects.all()
+    )
+    project = serializers.PrimaryKeyRelatedField(
+        source='sim.project',
+        queryset=Project.objects.all()
+    )
+    name = serializers.CharField(source='sim.project.name', read_only=True)
+
+    istat = StatementFromJSONConversionField(read_only=True)
+    roi = StatementFromJSONConversionField(read_only=True)
+    profitability = serializers.JSONField(read_only=True)
+
+    def __init__(self, *args, frequency='M', **kwargs):
+        super().__init__(*args, **kwargs)
+        self.frequency = frequency
+
+    class Meta:
+        model = ProjectStatement
+        fields = (
+            'id',
+            'name',
+            'project',
+            'environment',
+            'istat',
+            'roi',
+            'profitability',
+            'frequency'
+        )
+
+    def to_representation(self, instance):
+        """
+        Override the default representation to add the `frequency` field for the
+        `istat` and `roi` fields
+
+        Copied directly from https://www.cdrf.co/3.13/rest_framework.serializers/ModelSerializer.html
+        """
+        from collections import OrderedDict
+        from rest_framework.fields import SkipField
+        from rest_framework.relations import PKOnlyObject
+
+        ret = OrderedDict()
+        fields = self._readable_fields
+        for field in fields:
+            try:
+                attribute = field.get_attribute(instance)
+            except SkipField:
+                continue
+
+            check_for_none = attribute.pk if isinstance(attribute, PKOnlyObject) else attribute
+            if check_for_none is None:
+                ret[field.field_name] = None
+            else:
+                # Here is customization that allows serializer to accept `frequency` as
+                # an argument and pass it to the `to_representation` method of the
+                # `StatementFromJSONConversionField` fields
+                if isinstance(field, StatementFromJSONConversionField):
+                    ret[field.field_name] = field.to_representation(attribute, frequency=self.frequency)
+                else:
+                    ret[field.field_name] = field.to_representation(attribute)
+
+        return ret
+
+    def create(self, validated_data):
+        data = validated_data.copy()
+        sim, created = ProjectSimulation.objects.get_or_create(**data['sim'])
+
+        try:
+            obj = ProjectStatement.objects.get(sim=sim, frequency=self.frequency)
+        except ProjectStatement.DoesNotExist:
+            blocks = BlockScheduleSerializer(
+                sim.environment.block_schedule, 
+            ).to_schedule(with_period_index=True)
+            price = BitcoinPriceSerializer(
+                sim.environment.bitcoin_price, 
+            ).to_schedule()
+            fees = TransactionFeesSerializer(
+                sim.environment.transaction_fees,
+            ).to_schedule()
+            hash_rate = HashRateSerializer(
+                sim.environment.hash_rate, 
+            ).to_schedule()
+
+            env = init_environment(
+                blocks,
+                price.forecast,
+                fees.forecast,
+                hash_rate.forecast * 1e6 * 1e12 # convert from M TH/s to H/s
+            )
+            project = sim.project.as_drillbit_object()
+            stat = ProjectTemplate(env, project)
+
+            istat = stat.istat.to_frame(with_periods=False).to_json()
+            roi = stat.roi.to_frame(with_periods=False).to_json()
+            profitability = analysis(stat, project).summary()
+
+            obj = ProjectStatement.objects.create(
+                sim=sim,
+                frequency=self.frequency,
+                istat=istat,
+                roi=roi,
+                profitability=profitability
+            )
+
+        return obj

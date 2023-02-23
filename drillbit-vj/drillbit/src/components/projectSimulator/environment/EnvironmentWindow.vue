@@ -23,11 +23,7 @@ import { every_nth, useFormHelpers } from '@/services/composables'
 const store = useEnvironmentStore()
 
 const formHelpers = useFormHelpers()
-const { environment } = storeToRefs(store)
 
-const comboItems = computed(() => {
-  return store.objects.slice().reverse()
-})
 const summaryActive = ref(false)
 const activeIndex = ref(0)
 const elements = [
@@ -59,7 +55,7 @@ const createState = ref({})
 const load = (params) => {
   if (typeof params === 'string' || params instanceof String) {
     store.$patch((state) => {
-      state.environment.name = params
+      state.object.name = params
     })
   } else if (!params) {
     // pass
@@ -131,7 +127,7 @@ const readyOrNot = (name) => {
       <v-combobox
         @update:modelValue="(params) => load(params)"
         @click:clear="store.clear"
-        :items="comboItems"
+        :items="formHelpers.reverse(store.objects)"
         label="Environment"
         item-title="name"
         density="compact"

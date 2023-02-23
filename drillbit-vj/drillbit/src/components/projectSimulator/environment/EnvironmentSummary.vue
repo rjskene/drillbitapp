@@ -28,7 +28,6 @@ const reshape1dArrayTo2dArray = (array, columns) => {
   
   
 <template>
-  <!-- !createState?.isLoading &&  -->
   <v-row 
     v-for="(row, i) in reshape1dArrayTo2dArray(elements, 2)" 
     :key="'row-' + i"

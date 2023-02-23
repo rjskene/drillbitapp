@@ -3,11 +3,12 @@
   import MainWindow from '@/components/projectSimulator/MainWindow.vue'
   import EnvironmentWindow from '../components/projectSimulator/environment/EnvironmentWindow.vue'
   import ProjectWindow from '../components/projectSimulator/projects/ProjectWindow.vue'
+  import SimWindow from '../components/projectSimulator/sim/SimWindow.vue'
 
   const tabs = [
     {text: 'Environment', component: EnvironmentWindow},
     {text: 'Projects', component: ProjectWindow},
-    {text: 'Simulation'}
+    {text: 'Simulation', component: SimWindow}
   ]
   const currentTab = ref('Environment')
 </script>

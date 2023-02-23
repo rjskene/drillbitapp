@@ -16,7 +16,11 @@ const props = defineProps({
   },
   icon: {
     type: String,
-    default: 'mdi-content-save',
+    default: '',
+  },
+  label: {
+    type: String,
+    required: false,
   },
   successIcon: {
     type: String,
@@ -32,6 +36,12 @@ const state = ref(null)
 const success = ref(false)
 const error = ref(false)
 
+const btnClass = computed(() => {
+  return {
+    'v-btn--icon': props.label ? false : true,
+  }
+})
+
 const objectIsAsyncState = (obj) => {
   return obj.hasOwnProperty('state') 
     && obj.hasOwnProperty('isLoading') 
@@ -40,6 +50,7 @@ const objectIsAsyncState = (obj) => {
 }
 
 const onClick = () => {
+  console.log(props.onClick)
   state.value = props.onClick()
   if (!objectIsAsyncState(state.value)) {
     state.value = useAsyncState(
@@ -80,9 +91,10 @@ watch(state, (state, oldState) => {
     @click="onClick"
     v-bind="$attrs"
     :loading="state?.isLoading"
-    class="v-btn--icon"
+    :class="btnClass"
   >
     <slot>
+      <span v-if="props.label" class="mr-3">{{ props.label }}</span>
       <v-slide-x-transition :hide-on-leave="true">
         <v-icon v-if="error" color="red">{{props.errorIcon}}</v-icon>
         <v-icon v-else-if="success" color="green">{{ props.successIcon }}</v-icon>

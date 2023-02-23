@@ -21,13 +21,13 @@ const { environment } = storeToRefs(environmentStore)
 
 const activeIndex = ref(0)
 
-const load = (params) => {
+const load = async (params) => {
   if ((typeof params === 'string' || params instanceof String))
     projectsStore.$patch((state) => {
       state.object = {name: params}
     })
   else if (params)
-    projectsStore.load(params)
+    await projectsStore.load(params)
 }
 const copy = (project) => {
   const {['id']: _, ...params} = project
@@ -40,8 +40,11 @@ const copy = (project) => {
     <template #nav-panel>
       <v-combobox
         @update:modelValue="(params) => load(params)"
-        :items="projectsStore.objects"
+        @click:clear="projectsStore.resetObject"
+        :items="formHelpers.reverse(projectsStore.objects)"
+        :rules="formHelpers.nameRules.value"
         item-title="name"
+        label="Projects"
         density="compact"
         outlined
         clearable

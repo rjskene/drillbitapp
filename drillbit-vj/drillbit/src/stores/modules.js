@@ -5,7 +5,7 @@ import client from '../services/client'
 import { useGlobalStateStore } from './globalState'
 
 export const productPlugin = ({store}) => {
-  if (!Object.prototype.hasOwnProperty(store.$state, 'object')) {
+  if (!Object.keys(store.$state).includes('object')) {
     store.object = ref(null)
   }
   store.objects = ref([])
@@ -18,10 +18,11 @@ export const productPlugin = ({store}) => {
         store.objects = result.data
       })
   }
-  store.getObject = async ({pk}) => {
-    return client.getObjectsByPK({app: store.app, model: store.dataModel, pk})
+  store.getObject = async ({pk, params}) => {
+    return client.getObjectsByPK({app: store.app, model: store.dataModel, pk, params})
       .then((result) => {
         store.object = result.data
+        console.log(store.object)
       })
   }
   store.setObject = (object) => {
@@ -41,7 +42,9 @@ export const productPlugin = ({store}) => {
         store.objects = result.data
       else
         store.object = result.data
+      console.log(store.objects, store.object)
       })
+      
   }
   store.createObject = async ({params}) => {
     return client.createObject({
@@ -270,6 +273,26 @@ export const useProjectsStore = defineStore('projectsStore', () => {
   return { app, dataModel, object, load, save }
 })
 
+export const useSimulationStore = defineStore('simulationStore', () => {
+  const app = 'projects'
+  const dataModel = 'simulation'
+
+  return { app, dataModel }
+})
+
+export const useStatementStore = defineStore('statementStore', () => {
+  const app = 'projects'
+  const dataModel = 'statement'
+  const summary = ref(null)
+  const getSummary = async ({params}) => {
+    client.getStatSummary({params}).then((result) => { 
+        summary.value = result.data
+    })
+  }
+
+  return { app, dataModel, summary, getSummary }
+})
+
 export const useEnvironmentStore = defineStore('environmentStore', () => {
   const app = 'environment'
   const dataModel = 'environment'
@@ -293,28 +316,19 @@ export const useEnvironmentStore = defineStore('environmentStore', () => {
     }
   })
 
-  const environment = ref({name: null})
+  const object = ref({name: null})
   const clear = () => {
-    environment.value = {name: null}
-  }
-  const save = () => {
-    let pk = environment.value?.id ?? null
-    let params = {name: environment.value.name, ...components.value }
-    return client
-      .updateOrCreateObject({app, model: dataModel, pk, params})
-      .then((result) => {
-        environment.value = result.data
-      })
+    object.value = {name: null}
   }
   const load = async (params) => {
     let pk = params.id
     let result = await client.getObjectsByPK({app, model: dataModel, pk})
-    environment.value = result.data
+    object.value = result.data
     Object.entries(stores).forEach(([key, store]) => {
       client.getObjectsByPK({
         app: store.app, 
         model: store.dataModel, 
-        pk: environment.value[key]
+        pk: object.value[key]
       }).then(result => {
         store.object = result.data
         Object.keys(store.formParams).forEach((key) => {
@@ -322,6 +336,15 @@ export const useEnvironmentStore = defineStore('environmentStore', () => {
         })
       })
     })
+  }
+  const save = () => {
+    let pk = object.value?.id ?? null
+    let params = {name: object.value.name, ...components.value }
+    return client
+      .updateOrCreateObject({app, model: dataModel, pk, params})
+      .then((result) => {
+        object.value = result.data
+      })
   }
   const locked = ref({
     blockSchedule: false,
@@ -350,7 +373,7 @@ export const useEnvironmentStore = defineStore('environmentStore', () => {
   })
   return {
     app, dataModel,
-    environment, components, 
+    object, components, 
     save, load, clear,
     lockable, locked, allLocked, allLockable
   }

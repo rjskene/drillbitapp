@@ -52,8 +52,8 @@ class Client {
     return res
   }
 
-async fetchStatement({app, model, pk, params}) {
-    let res = this.client.get(`/${app}/${model}/${pk}/statement/`, {params})
+  async getStatSummary({params}) {
+    let res = this.client.get('/projects/statement/summary/', {params})
     return res
   }
   // async printFinancials({pk, params}) {

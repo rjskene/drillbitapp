@@ -150,8 +150,10 @@ export function useFormHelpers() {
       }
     ]
   })
+  const reverse = (arr) => arr.slice().reverse()
   return {
-    nameRules, startDateRules, endDateRules, numberRules, percentageRules
+    nameRules, startDateRules, endDateRules, numberRules, percentageRules,
+    reverse
   }
 }
 

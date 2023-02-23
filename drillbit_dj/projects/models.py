@@ -7,6 +7,8 @@ from drillbit.__new_objects import RigOperator, CoolingOperator, HeatRejectionOp
 
 from drillbit_dj.project import ProjectModel
 from products.models import Rig, Cooling, HeatRejection, Electrical
+from environment.models import Environment
+
 
 class RigForProject(ProjectModel):
     project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='rigs')
@@ -112,6 +114,24 @@ class Project(ProjectModel):
             rigs=[rig.as_drillbit_object() for rig in self.rigs.all()][0], # only use first rig for now
             infrastructure=[infra.as_drillbit_object() for infra in self.infrastructure.all()],
         )
+
+class ProjectSimulation(ProjectModel):
+    environment = models.ForeignKey(Environment, on_delete=models.PROTECT)
+    project = models.ForeignKey(Project, on_delete=models.PROTECT)
+
+FREQUENCY_CHOICES = (
+    ('D', 'Daily'),
+    ('M', 'Monthly'),
+    ('Q', 'Quarterly'),
+    ('A', 'Annually')
+)
+class ProjectStatement(ProjectModel):
+    sim = models.ForeignKey(ProjectSimulation, on_delete=models.PROTECT)
+    frequency = models.CharField('Frequency', max_length=10, choices=FREQUENCY_CHOICES)
+
+    istat = models.JSONField(default=dict)
+    roi = models.JSONField(default=dict)
+    profitability = models.JSONField(default=dict)
 
 class Projects(ProjectModel):
     name = models.CharField('Name', max_length=100)

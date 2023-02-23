@@ -10,10 +10,13 @@ class JSONConversionField(serializers.JSONField):
     Color objects are serialized into 'rgb(#, #, #)' notation.
     """
     def to_representation(self, value):
-        return json.loads(value)
+        if isinstance(value, dict):
+            return value
+        else:
+            return json.loads(value)
 
 class BitcoinUtilityInitMixin:
-    def __init__(self, *args, bitcoin_utility, **kwargs):
+    def __init__(self, *args, bitcoin_utility=None, **kwargs):
         self.btc = bitcoin_utility
         super().__init__(*args, **kwargs)
 
@@ -68,8 +71,27 @@ class BlockScheduleSerializer(
 
         return obj
 
-    def to_schedule(self):
-        return pd.DataFrame(self.data['data'])
+    def to_schedule(self, with_period_index=False):
+        """
+        Converts the JSON string into a pandas DataFrame.
+
+        Parameters
+        ----------
+        with_periods : bool, optional
+            If True, the period column is returned as a pandas PeriodIndex.
+            Otherwise, the period column is returned as a string. Default: False.
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            The block schedule as a DataFrame.
+        """
+        df = pd.DataFrame(self.data['data'])
+        if with_period_index:
+            df = df.set_index('period')
+            df.index = pd.to_datetime(df.index).to_period()
+
+        return df
 
 class BitcoinPriceSerializer(
     BitcoinUtilityInitMixin,
