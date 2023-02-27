@@ -25,11 +25,10 @@ class StatementFromJSONConversionField(serializers.JSONField):
     def to_representation(self, value, frequency='M'):
         value = json.loads(value)
         value = pd.DataFrame(value)
+        value.columns = pd.to_datetime(value.columns).to_period(freq='10T')
+        value = value.T.resample(frequency).sum().T
 
-        if frequency != 'M':
-            value.columns = pd.to_datetime(value.columns).to_period(freq='10 Min')
-            value = value.T.resample(frequency).sum().T
-            value.columns = value.columns.strftime('%Y-%m-%d %H:%M:%S')
+        value.columns = value.columns.strftime('%Y-%m-%d')
             
         stat = {
             'stat': value.reset_index().to_dict(orient='records'),
@@ -371,6 +370,7 @@ class ProjectStatementSerializer(
     )
     name = serializers.CharField(source='sim.project.name', read_only=True)
 
+    env = StatementFromJSONConversionField(read_only=True)
     istat = StatementFromJSONConversionField(read_only=True)
     roi = StatementFromJSONConversionField(read_only=True)
     profitability = serializers.JSONField(read_only=True)
@@ -386,6 +386,7 @@ class ProjectStatementSerializer(
             'name',
             'project',
             'environment',
+            'env',
             'istat',
             'roi',
             'profitability',
@@ -454,6 +455,7 @@ class ProjectStatementSerializer(
             project = sim.project.as_drillbit_object()
             stat = ProjectTemplate(env, project)
 
+            env = stat.env.to_frame(with_periods=False).to_json()
             istat = stat.istat.to_frame(with_periods=False).to_json()
             roi = stat.roi.to_frame(with_periods=False).to_json()
             profitability = analysis(stat, project).summary()
@@ -461,6 +463,7 @@ class ProjectStatementSerializer(
             obj = ProjectStatement.objects.create(
                 sim=sim,
                 frequency=self.frequency,
+                env=env,
                 istat=istat,
                 roi=roi,
                 profitability=profitability

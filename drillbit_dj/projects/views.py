@@ -74,8 +74,60 @@ class ProjectStatementViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    @action(detail=False, methods=['get'], name='Project Statement Accounts')
+    def projects_by_account(self, request, *args, **kwargs):
+        environment = request.query_params.get('environment', None)    
+        projects = request.GET.getlist('projects[]', None)
+        frequency = request.query_params.get('frequency', 'M')
+
+        projects = Project.objects.filter(pk__in=projects)
+        project_dfs = []
+        for project in projects:
+            data = {
+                'environment': environment, 
+                'project': project.id, 
+                'frequency': frequency
+            }
+            ser = ProjectStatementSerializer(data=data, frequency=frequency)
+            ser.is_valid()
+            ser.save()
+            env = ser.data['env']
+            roi = ser.data['roi']
+            istat = ser.data['istat']
+            df = pd.concat((
+                pd.DataFrame(env['stat']).set_index('index'),
+                pd.DataFrame(roi['stat']).set_index('index'),
+                pd.DataFrame(istat['stat']).set_index('index'),
+            )).fillna(0)
+            project_dfs.append(df)
+
+        df = pd.concat(
+            project_dfs,
+            keys=list(projects.values_list('name', flat=True)),
+            names=['Project', 'Account']
+        ) \
+        .reorder_levels([1,0]) \
+        .sort_index()
+
+        response = {
+            'labels': df.columns,
+            'datasets': {}
+        }
+
+        for account, name in df.index:
+            if account not in response['datasets']:
+                response['datasets'][account] = []
+            
+            dataset = {
+                'label': name,
+                'data': df.loc[(account, name)].values.tolist()
+            }
+            response['datasets'][account].append(dataset)
+
+        return Response(response)
+
     @action(detail=False, methods=['get'], name='Summary Comparison')
-    def summary(self , request, *args, **kwargs):
+    def summary(self, request, *args, **kwargs):
         environment = request.query_params.get('environment', None)    
         projects = request.GET.getlist('projects[]', None)
 

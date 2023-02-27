@@ -7,21 +7,23 @@ import MainWindow from '../MainWindow.vue'
 import CompWindow from './CompWindow.vue'
 
 import { 
- useProjectStore, useEnvironmentStore, useProjectsStore,
- useSimulationStore, useStatementStore
+ useEnvironmentStore, 
+ useProjectsStore,
+ useStatementStore
 } from '@/stores/modules'
 import { useFormHelpers, TableMaker } from '@/services/composables'
 
-const projectStore = useProjectStore()
 const projectsStore = useProjectsStore()
 const envStore = useEnvironmentStore()
-const simStore = useSimulationStore()
 const statStore = useStatementStore()
 const formHelpers = useFormHelpers()
 
-const activeIndex = ref(0)
+const activeIndex = ref(-1)
 
 const runSim = () => {
+  /* 
+  Run create objects, then execute getSummary and also fetch data for charts afterwards
+  */
   let params = []
   projectsStore.object.projects.forEach((project) => {
     params.push({
@@ -31,35 +33,23 @@ const runSim = () => {
     })
   })
   return statStore.createObjects({params}).then(() => {
-    statStore.getSummary({
-      params: { 
-        environment: envStore.object.id,
-        projects: projectsStore.object.projects.map((project) => project.id)
-      }
-    })
+    try {
+      return statStore.getSummary({
+        params: { 
+          environment: envStore.object.id,
+          projects: projectsStore.object.projects.map((project) => project.id)
+        }
+      })
+    } finally {
+      statStore.getByAccount({
+        params: { 
+          environment: envStore.object.id,
+          projects: projectsStore.object.projects.map((project) => project.id)
+        }
+      })
+    }
   })
 }
-const columns = computed(() => {
-  let cols = [
-    {
-      field: 'index',
-      header: '', 
-      headerClass: 'table-header-center',
-      bodyClass: 'table-body-center min-col-width-7dot5',
-    }
-  ]
-  projectsStore.object.projects.forEach((project) => {
-    cols.push({
-      field: project.name,
-      header: project.name, 
-      headerClass: 'table-header-center',
-      bodyClass: 'table-body-center min-col-width-7dot5',
-    })
-  })
-
-  let table = new TableMaker(cols)
-  return table.columns
-})
 </script>
 
 <template>

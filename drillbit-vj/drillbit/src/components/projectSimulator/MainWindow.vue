@@ -15,7 +15,7 @@ import { storeToRefs } from 'pinia'
         </v-list>
       </v-col>
       <v-col cols="9" class="h-100">
-        <v-card elevation="0" class="border rounded-xl ma-0 pa-5 h-100">
+        <v-card elevation="0" class="border rounded-xl ma-0 pa-0 h-100">
           <slot name="main-panel"></slot>
         </v-card>
       </v-col>

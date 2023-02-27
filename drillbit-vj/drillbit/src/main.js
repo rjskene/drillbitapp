@@ -20,12 +20,14 @@ import '@mdi/font/css/materialdesignicons.css' // Ensure you are using css-loade
 import vuetify from '@/services/vuetify'
 
 // Pinia
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import { productPlugin } from "@/stores/modules"
 
 
 
 const pinia = createPinia()
 pinia.use(productPlugin)
+pinia.use(piniaPluginPersistedstate)
 
 const app = createApp(App)
 
@@ -36,11 +38,15 @@ app.use(PrimeVue)
 
 app.mount('#app')
 
-import annotationPlugin from 'chartjs-plugin-annotation';
+import annotationPlugin from 'chartjs-plugin-annotation'
+
+import { Colors } from 'chart.js';
+console.log(Colors)
+// Chart.register(Colors);
 
 ChartJS.register(...registerables)
 ChartJS.register(annotationPlugin)
 // ChartJS.defaults.backgroundColor = vuetify.theme.themes.value.light.colors.blue
-ChartJS.defaults.borderColor = vuetify.theme.themes.value.dark.colors['on-surface']
+// ChartJS.defaults.borderColor = vuetify.theme.themes.value.dark.colors['on-surface']
 ChartJS.defaults.color = vuetify.theme.themes.value.dark.colors['on-surface']
 // ChartJS.defaults.color = vuetify.theme.themes.value.light.colors.blue

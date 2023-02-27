@@ -129,6 +129,7 @@ class ProjectStatement(ProjectModel):
     sim = models.ForeignKey(ProjectSimulation, on_delete=models.PROTECT)
     frequency = models.CharField('Frequency', max_length=10, choices=FREQUENCY_CHOICES)
 
+    env = models.JSONField(default=dict)
     istat = models.JSONField(default=dict)
     roi = models.JSONField(default=dict)
     profitability = models.JSONField(default=dict)

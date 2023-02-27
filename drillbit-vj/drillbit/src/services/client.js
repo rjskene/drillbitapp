@@ -51,15 +51,14 @@ class Client {
     let res = await this.client.get(`/${app}/${model}/${pk}/costs/`)
     return res
   }
-
   async getStatSummary({params}) {
     let res = this.client.get('/projects/statement/summary/', {params})
     return res
   }
-  // async printFinancials({pk, params}) {
-  //   let res = this.client.get(`/financials/financials-forecasts/${pk}/print-statements/`, {params})
-  //   return res
-  // }
+  async getStatByAccount({params}) {
+    let res = this.client.get('/projects/statement/projects_by_account/', {params})
+    return res
+  }
 }
 
 const client = new Client()

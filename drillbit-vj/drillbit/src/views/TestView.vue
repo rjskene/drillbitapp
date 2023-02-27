@@ -1,24 +1,33 @@
 <script setup>
-import { useAsyncState } from '@vueuse/core'
+import { ref, computed } from 'vue'
+import { useAsyncState, useAsyncQueue, useStorage } from '@vueuse/core'
 
-import { useRigStore } from '@/stores/modules'
+import StatefulBtn from '@/components/reuseable/StatefulBtn.vue'
 
-const objects = [
-  {a: 'test', b: 'object'},
-  {a: 'different', b: 'values'}
-]
-const filter = () => {
-  return objects.map((v, i, arr) => {
-    return v.a
-  })
-}
-const test = filter()
+import { 
+  useProjectStore, useProjectsStore, useEnvironmentStore, useSimulationStore, useStatementStore 
+} 
+  from '@/stores/modules'
+const projectStore = useProjectStore()
+const projectsStore = useProjectsStore()
+const envStore = useEnvironmentStore()
+const simStore = useSimulationStore()
+const statStore = useStatementStore()
+
+const test = ref(null)
+
+const state = useStorage('test', test)
 </script>
-  {{test}}
-  
+
 <template>
-
-
+  <v-text-field
+  v-model="test"
+  label="Test"
+  outlined
+  dense
+  class="mt-0"
+  />
+  {{ test }}
 </template>
   
   

@@ -1,5 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { defineStore, storeToRefs } from 'pinia'
+import { useStorage } from '@vueuse/core'
+
 
 import client from '../services/client'
 import { useGlobalStateStore } from './globalState'
@@ -22,7 +24,6 @@ export const productPlugin = ({store}) => {
     return client.getObjectsByPK({app: store.app, model: store.dataModel, pk, params})
       .then((result) => {
         store.object = result.data
-        console.log(store.object)
       })
   }
   store.setObject = (object) => {
@@ -42,7 +43,6 @@ export const productPlugin = ({store}) => {
         store.objects = result.data
       else
         store.object = result.data
-      console.log(store.objects, store.object)
       })
       
   }
@@ -271,6 +271,10 @@ export const useProjectsStore = defineStore('projectsStore', () => {
   }
   
   return { app, dataModel, object, load, save }
+  },{
+    persist: {
+      storage: sessionStorage,
+  },
 })
 
 export const useSimulationStore = defineStore('simulationStore', () => {
@@ -283,15 +287,27 @@ export const useSimulationStore = defineStore('simulationStore', () => {
 export const useStatementStore = defineStore('statementStore', () => {
   const app = 'projects'
   const dataModel = 'statement'
+
   const summary = ref(null)
+  const byAccount = ref(null)
+
   const getSummary = async ({params}) => {
-    client.getStatSummary({params}).then((result) => { 
+    return client.getStatSummary({params}).then((result) => { 
         summary.value = result.data
     })
   }
-
-  return { app, dataModel, summary, getSummary }
-})
+  const getByAccount = async ({params}) => {
+    return client.getStatByAccount({params}).then((result) => { 
+        byAccount.value = result.data
+    })
+  }
+  return { app, dataModel, summary, getSummary, byAccount, getByAccount }
+  }, {
+    persist: {
+      storage: sessionStorage,
+    },
+  }
+)
 
 export const useEnvironmentStore = defineStore('environmentStore', () => {
   const app = 'environment'
@@ -377,4 +393,8 @@ export const useEnvironmentStore = defineStore('environmentStore', () => {
     save, load, clear,
     lockable, locked, allLocked, allLockable
   }
+},{
+  persist: {
+    storage: sessionStorage,
+  },
 })

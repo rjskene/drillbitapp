@@ -43,14 +43,20 @@ const btnClass = computed(() => {
 })
 
 const objectIsAsyncState = (obj) => {
+  console.log('obj', obj)
   return obj.hasOwnProperty('state') 
     && obj.hasOwnProperty('isLoading') 
     && obj.hasOwnProperty('isReady')
     && obj.hasOwnProperty('error')
 }
+const objectIsAsyncQueue = (obj) => {
+  return obj.hasOwnProperty('activeIndex') 
+    && obj.hasOwnProperty('result')
+    && Object.keys(obj).length() === 2
+    && obj.result instanceof Array
+}
 
 const onClick = () => {
-  console.log(props.onClick)
   state.value = props.onClick()
   if (!objectIsAsyncState(state.value)) {
     state.value = useAsyncState(
