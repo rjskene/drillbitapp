@@ -3,8 +3,8 @@ import 'chartjs-adapter-moment'
 import { toRefs, computed } from 'vue'
 
 import { Line } from 'vue-chartjs'
-
-import { useFormatHelpers } from '../../services/composables'
+import vuetify from '@/services/vuetify'
+import { useFormatHelpers, hexToRGB } from '../../services/composables'
 
 const format = useFormatHelpers()
 
@@ -25,11 +25,15 @@ const props = defineProps({
     type: String,
     default: '',
   },
-  xTickPrefix: {
+  yTickFormat: {
     type: String,
-    default: '\u20BF ',
+    default: null,
   },
-  xTickSuffix: {
+  yTickPrefix: {
+    type: String,
+    default: '',
+  },
+  yTickSuffix: {
     type: String,
     default: '',
   },
@@ -43,13 +47,7 @@ const props = defineProps({
   }
 })
 
-const { labels, datasets, xLabel, yLabel } = toRefs(props)
-
-function formatDateTime(date) {  
-    if (!date) return 'NA'
-    const options = { year: 'numeric', month: 'short'}
-    return date.toLocaleString(undefined, options)
-}
+const { labels, datasets, title, yTickFormat, xLabel, yLabel, yTickPrefix, yTickSuffix } = toRefs(props)
 
 const colors = [
   '#3a5ba9', // primary variant 1
@@ -66,7 +64,7 @@ const chartData = computed(() => {
     dataset.backgroundColor = colors[index]
   })
   let chartData = {
-    labels: labels.value,
+    labels: labels.value.map((label) => new Date(label)),
     datasets: dataSets
   }
   return chartData
@@ -76,7 +74,7 @@ const chartOptions = {
   plugins: {
     title: {
       display: true,
-      text: props.title,
+      text: () => title.value,
       color: '#ffffffde',
       font: {
         size: 16,
@@ -102,30 +100,37 @@ const chartOptions = {
     x: {
       type: 'time',
       time: {
+        unit: 'quarter',
         displayFormats: {
           quarter: 'MMM YYYY'
-        }
+        },
+      },
+      border: {
+        color: hexToRGB(vuetify.theme.current.value.colors['on-surface'], .15, true)
       },
       grid: {
         display: false,
-        // borderColor: dark.colors['blue-lighten-4'],
       },
-      // ticks: {
-      //   callback: (value) => {
-      //     console.log(value, formatDateTime(value))
-      //     return formatDateTime(value)
-      //   },
-      // }
+      ticks: {
+        callback: (tick) => new Date(tick).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }).split(' '),
+      },
     },
     y: {
       beginAtZero: true,
+      border: {
+        color: hexToRGB(vuetify.theme.current.value.colors['on-surface'], .15, true)
+      },
       grid: {
         display: false,
-        // borderColor: dark.colors['blue-lighten-4']
       },
       ticks: { 
-        // color: dark.colors['blue-lighten-4'],
-        callback: (value, index, ticks) => props.xTickPrefix + format.numberWithCommas(value) + props.xTickSuffix,
+        callback: (value, index, ticks) => {
+          if (yTickFormat.value) {
+            return format[yTickFormat.value](value)
+          }
+          else
+            return yTickPrefix.value + format.numberWithCommas(value) + yTickSuffix.value
+        },
       }
     }
   }

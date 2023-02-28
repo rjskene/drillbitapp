@@ -225,24 +225,26 @@ const updateCosts = (pk) => {
       variant="flat"
       icon="mdi-redo"      
     />
-    <v-sheet 
-      class="d-flex justify-space-between mx-3"
-    >
       <v-sheet
-        class="d-flex flex-column justify-space-between"
-        min-width="400"
+        class="d-flex justify-left ml-3"
       >
           <v-text-field
             v-bind="projectStructure.name"
             v-model="project.name"
+            class="pr-12"
           />
           <v-text-field
             v-bind="projectStructure.description"
             v-model="project.description"
+            class="mx-3"
           />
-        </v-sheet>
+      </v-sheet>
+    <v-divider></v-divider>
+    <v-card-subtitle class="my-3">Specs</v-card-subtitle>
+    <v-sheet
+      class="d-flex justify-space-around mx-3"
+    >
       <v-sheet
-        class="d-flex flex-column justify-space-between ml-12"
         min-width="200"
       >
         <v-text-field 

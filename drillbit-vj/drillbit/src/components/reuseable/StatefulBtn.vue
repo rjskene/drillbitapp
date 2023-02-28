@@ -43,7 +43,6 @@ const btnClass = computed(() => {
 })
 
 const objectIsAsyncState = (obj) => {
-  console.log('obj', obj)
   return obj.hasOwnProperty('state') 
     && obj.hasOwnProperty('isLoading') 
     && obj.hasOwnProperty('isReady')

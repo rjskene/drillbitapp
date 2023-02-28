@@ -63,7 +63,7 @@ const runSim = () => {
         label="Environment"
         density="compact"
         outlined
-        class="mt-0"
+        class="mt-0 pl-3 pr-3"
       />
     <v-combobox
       v-model="projectsStore.object"
@@ -73,9 +73,9 @@ const runSim = () => {
       label="Projects"
       density="compact"
       outlined
-      class="mt-0"
+      class="mt-0 pl-3 pr-3"
     />
-    <div class="d-flex justify-center">
+    <div class="d-flex justify-center pt-3">
       <StatefulBtn
         @click="runSim"
         variant="outlined"
@@ -90,7 +90,7 @@ const runSim = () => {
       @click="activeIndex = -1"
       key="summary"
       value="4"
-      class="mt-6"
+      class="mt-6 pl-3"
     >
       Summary
     </v-list-item>
@@ -100,6 +100,7 @@ const runSim = () => {
           @click="activeIndex = i"
           :key="'project' + i"
           :value="i"
+          class="pl-3"
         >
           {{ project.name }}
         </v-list-item>
@@ -119,5 +120,8 @@ const runSim = () => {
 <style scoped>
 :deep(.v-combobox > .v-input__append) {
   padding: 0;
+}
+:deep(.v-btn--variant-outlined) {
+  border: 1px solid rgba(var(--v-border-color), .35);
 }
 </style>

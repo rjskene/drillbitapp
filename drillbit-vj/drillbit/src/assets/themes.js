@@ -3,7 +3,9 @@ const dark = {
   colors: {
     background: '#21262d',
     surface: '#2c323c',
-    // 'surface-01dp': '#1C2636',
+    'surface-01dp': '#353c48',
+    'surface-02dp': '#38404c',
+    'surface-12dp': '#414958',
     // 'surface-02dp': '#212B3A',
     // 'surface-03dp': '#232D3C',
     // 'surface-04dp': '#26303E',

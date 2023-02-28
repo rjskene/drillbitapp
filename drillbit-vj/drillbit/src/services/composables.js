@@ -24,8 +24,11 @@ export function useFormatHelpers() {
   const percentage = (value) => {
     return (value*100).toFixed(2) + '%'
   }
-  const numberWithCommas = (value) => {
-    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  const number = (value) => {
+    return value.toFixed(0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  }
+  const BTC = (value) => {
+    return '\u20BF ' + value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
   }
   const currency = (value, style='') => {
     let NF = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
@@ -36,20 +39,7 @@ export function useFormatHelpers() {
   
     return NF.format(value) + style
   }
-  const hashRate = (value) => {
-    let units = ['H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s', 'PH/s']
-    let i = 0
-    while (value > 1000) {
-      value = value/1000
-      i++
-    }
-    if (value)
-      return value.toFixed(2) + ' ' + units[i]
-    else
-      return null
-  }
-  const power = (value) => {
-    let units = ['W', 'kW', 'MW', 'GW', 'TW', 'PW']
+  const scaler = (value, units) => {
     let i = 0
     while (value >= 1000) {
       value = value/1000
@@ -60,7 +50,46 @@ export function useFormatHelpers() {
     else
       return null
   }
-  return { percentage, numberWithCommas, currency, hashRate, power }
+  const inverseScaler = (value, units) => {
+    if (value === 0) return value
+    else if (value < 0) throw new Error('Value must be positive')
+    
+    let i = 0
+    while (value < 1) {
+      value = value*1000
+      i++
+    }
+    if (value)
+      return value.toFixed(2) + ' ' + units[i]
+    else
+      return null
+  }  
+  const hashes = (value) => {
+    let units = ['H', 'KH', 'MH', 'GH', 'TH', 'PH', 'EH', 'ZH', 'YH', 'RH']
+    return scaler(value, units)
+  }
+  const hashRate = (value) => {
+    let units = ['H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s', 'PH/s', 'EH/s', 'ZH/s', 'YH/s', 'RH/s']
+    return scaler(value, units)
+  }
+  const power = (value) => {
+    let units = ['W', 'kW', 'MW', 'GW', 'TW', 'PW', 'EW', 'ZW', 'YW', 'RW']
+    return scaler(value, units)
+  }
+  const energy = (value) => {
+    let units = ['Wh', 'kWh', 'MWh', 'GWh', 'TWh', 'PWh', 'EWh', 'ZWh', 'YWh', 'RWh']
+    return scaler(value, units)
+  }
+  const efficiency = (value) => {
+    let units = ['J/H', 'J/KH', 'J/MH', 'J/GH', 'J/TH', 'J/PH', 'J/EH', 'J/ZH', 'J/YH', 'J/RH']
+    return inverseScaler(value, units)
+  }
+  const hashPrice = (value) => {
+    console.log(value)
+    let units = ['$/H', '$/KH', '$/MH', '$/GH', '$/TH', '$/PH', '$/EH', '$/ZH', '$/YH', '$/RH']
+    return inverseScaler(value, units)
+  }
+  return { percentage, number, BTC, currency, hashes, hashRate, power, energy, efficiency, hashPrice }
 }
 
 const format = useFormatHelpers()

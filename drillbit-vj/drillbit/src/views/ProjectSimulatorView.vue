@@ -13,12 +13,14 @@
   const currentTab = ref('Simulation')
 </script>
   
-  
 <template>
-  <v-card class="ma-10 pa-0 rounded-xl" min-height="1200px">
+  <v-card 
+    class="ma-10 pa-0 rounded-xl" 
+    min-height="1200px"
+    color="background"
+  >
     <v-tabs
       v-model="currentTab"
-      bg-color="background"
     >
         <v-tab
           v-for="tab in tabs"
@@ -31,8 +33,7 @@
       </v-tabs>
     <v-window
       v-model="currentTab"
-      color="surface-lighten-1"
-      class="ma-3"
+      class="mt-6"
       >
         <v-window-item
           v-for="tab in tabs"

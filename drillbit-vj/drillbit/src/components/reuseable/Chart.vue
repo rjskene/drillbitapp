@@ -3,8 +3,8 @@ import 'chartjs-adapter-moment'
 import { toRefs, computed } from 'vue'
 
 import { Line } from 'vue-chartjs'
-
-import { useFormatHelpers } from '../../services/composables'
+import vuetify from '@/services/vuetify'
+import { useFormatHelpers, hexToRGB } from '../../services/composables'
 
 const format = useFormatHelpers()
 
@@ -13,6 +13,18 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  legend: {
+    type: Object,
+    default: {
+      display: false,
+    },
+  },
+  title: {
+    type: Object,
+    default: {
+      display: false,
+    },
+  },
   label: {
     type: String,
     default: null,
@@ -20,6 +32,10 @@ const props = defineProps({
   xLabel: {
     type: String,
     required: true,
+  },
+  xAxisUnit: {
+    type: String,
+    default: 'quarter',
   },
   xTickPrefix: {
     type: String,
@@ -39,7 +55,7 @@ const props = defineProps({
   }
 })
 
-const { data, xLabel, yLabel } = toRefs(props)
+const { data, xAxisUnit, title, legend, xLabel, yLabel } = toRefs(props)
 
 const labels = computed(() => {
   let labels = []
@@ -48,62 +64,66 @@ const labels = computed(() => {
   )
   return labels
 })
-function formatDateTime(date) {  
-    if (!date) return 'NA'
-    const options = { year: 'numeric', month: 'short'}
-    return date.toLocaleString(undefined, options)
-}
 const chartData = computed(() => {
   let chartData = {
     labels: labels.value,
     datasets: [{
       label: props.label,
       data: data.value.map((object) => object[yLabel.value]),
-      // backgroundColor: vuetify.theme.themes.value.light.colors.green,
     }]
   }
   return chartData
 })
-const chartOptions = {
-  responsive: true,
-  // maintainAspectRatio: false,
-  elements: {
-    point: {
-      radius: 0
-    }
-  },
-  scales: {
-    x: {
-      type: 'time',
-      time: {
-        displayFormats: {
-          quarter: 'MMM YYYY'
-        }
-      },
-      grid: {
-        display: false,
-        // borderColor: dark.colors['blue-lighten-4'],
-      },
-      // ticks: {
-      //   callback: (value) => {
-      //     console.log(value, formatDateTime(value))
-      //     return formatDateTime(value)
-      //   },
-      // }
+const chartOptions = computed(() => {
+  return {
+    responsive: true,
+    // maintainAspectRatio: false,
+    elements: {
+      point: {
+        radius: 0
+      }
     },
-    y: {
-      beginAtZero: true,
-      grid: {
-        display: false,
-        // borderColor: dark.colors['blue-lighten-4']
+    plugins: {
+      title: title.value,
+      legend: legend.value
+    },
+    scales: {
+      x: {
+        type: 'time',
+        time: {
+          displayFormats: {
+            quarter: 'MMM YYYY'
+          }
+        },
+        time: {
+          unit: xAxisUnit.value,
+          displayFormats: {
+            quarter: 'MMM YYYY',
+            year: 'YYYY'
+          },
+        },
+        border: {
+          color: hexToRGB(vuetify.theme.current.value.colors['on-surface'], .15, true)
+        },
+        grid: {
+          display: false,
+        },
+        ticks: {
+          callback: (tick) => new Date(tick).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }).split(' '),
+        },
       },
-      ticks: { 
-        // color: dark.colors['blue-lighten-4'],
-        callback: (value, index, ticks) => props.xTickPrefix + format.numberWithCommas(value) + props.xTickSuffix,
+      y: {
+        beginAtZero: true,
+        grid: {
+          display: false,
+        },
+        ticks: { 
+          callback: (value, index, ticks) => props.xTickPrefix + format.numberWithCommas(value) + props.xTickSuffix,
+        }
       }
     }
   }
-}
+})
 </script>
   
   

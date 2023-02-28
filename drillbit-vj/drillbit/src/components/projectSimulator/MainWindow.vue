@@ -4,18 +4,23 @@ import { storeToRefs } from 'pinia'
 </script>
 
 <template>
-  <v-container fluid class="d-flex ma-0 px-0">
-    <v-row>
-      <v-col cols="3">
-        <v-list
-          nav
-          density="compact"
+  <v-container 
+    fluid
+    class="d-flex ma-0 pa-0 mt-3"
+  >
+    <v-row class="ma-0 pa-0">
+      <v-col cols="3" class="h-100 ma-0 pa-0">
+        <v-sheet
+          class="ma-0 pa-0 pt-3 pb-3 rounded-xl"
         >
           <slot name="nav-panel"></slot>
-        </v-list>
+        </v-sheet>
       </v-col>
-      <v-col cols="9" class="h-100">
-        <v-card elevation="0" class="border rounded-xl ma-0 pa-0 h-100">
+      <v-col cols="8" class="ma-0 pa-0 ml-12">
+        <v-card elevation="0" 
+          class="ma-0 pa-0 pt-3 h-100 rounded-xl"
+          color="surface"
+        >
           <slot name="main-panel"></slot>
         </v-card>
       </v-col>
@@ -24,4 +29,7 @@ import { storeToRefs } from 'pinia'
 </template>
   
 <style scoped>
+:deep(.border-right) {
+  border: 1px solid rgb(var(--v-theme-background));
+}
 </style>

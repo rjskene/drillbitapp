@@ -294,11 +294,12 @@ export const useStatementStore = defineStore('statementStore', () => {
   const getSummary = async ({params}) => {
     return client.getStatSummary({params}).then((result) => { 
         summary.value = result.data
+        console.log(summary.value)
     })
   }
   const getByAccount = async ({params}) => {
     return client.getStatByAccount({params}).then((result) => { 
-        byAccount.value = result.data
+      byAccount.value = result.data
     })
   }
   return { app, dataModel, summary, getSummary, byAccount, getByAccount }

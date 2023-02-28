@@ -40,10 +40,6 @@ app.mount('#app')
 
 import annotationPlugin from 'chartjs-plugin-annotation'
 
-import { Colors } from 'chart.js';
-console.log(Colors)
-// Chart.register(Colors);
-
 ChartJS.register(...registerables)
 ChartJS.register(annotationPlugin)
 // ChartJS.defaults.backgroundColor = vuetify.theme.themes.value.light.colors.blue

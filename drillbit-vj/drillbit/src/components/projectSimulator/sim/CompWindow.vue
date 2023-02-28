@@ -7,11 +7,12 @@ import MultiLineChart from '@/components/reuseable/MultiLineChart.vue'
 
 import { useProjectsStore, useStatementStore } from '@/stores/modules'
 
-import { useFormHelpers, TableMaker } from '@/services/composables'
+import { useFormHelpers, useFormatHelpers, TableMaker } from '@/services/composables'
 
 const projectsStore = useProjectsStore()
 const statStore = useStatementStore()
 const formHelpers = useFormHelpers()
+const formatHelpers = useFormatHelpers()
 const view = ref(0)
 const tableType = ref(0)
 
@@ -20,8 +21,8 @@ const columns = computed(() => {
     {
       field: 'index',
       header: '', 
-      headerClass: 'table-header-center',
-      bodyClass: 'table-body-center min-col-width-7dot5',
+      headerClass: 'table-header-left',
+      bodyClass: 'table-body-left min-col-width-7dot5',
     }
   ]
   if (projectsStore.object?.projects?.length === 0) return []
@@ -32,6 +33,7 @@ const columns = computed(() => {
         header: project.name, 
         headerClass: 'table-header-center',
         bodyClass: 'table-body-center min-col-width-7dot5',
+        bodyFunc: rowFormat,
       })
     })
 
@@ -39,12 +41,106 @@ const columns = computed(() => {
   return table.columns
 })
 
+const summary_dollar_rows = [
+  'Rig Costs', 'Total Infra Costs', 'Capital Costs', 'Total Cost',
+  'Net Cash Flow, held',
+  'Net Gain, held'
+]
+const summary_hash_price_rows = [
+  'Rigs Hash Price', 'Infra Hash Price', 'Build Hash Price', 'Cash Hash Price'
+]
+const summary_percent_rows = [
+  'ROI, held', 'IRR 3-year, held', 'IRR 5-year, held', 'IRR terminal, held'
+]
+
+const tableRows = computed(() => {
+  let tableRows = [
+    {
+      name: 'Capacity', 
+      unit: 'power',
+    }, 
+    {
+      name: 'Compute Power',
+      unit: 'power',
+    },
+    {
+      name: 'Infra Power',
+      unit: 'power',
+    },
+    {
+      name: 'Number of Rigs',
+      unit: 'number',
+    },
+    {
+      name: 'HR / rig',
+      unit: 'hashRate',
+    },
+    {
+      name: 'Hash Rate',
+      unit: 'hashRate',
+    },
+    {
+      name: 'Total Hashes',
+      unit: 'hashes',
+    },
+    {
+      name: 'Energy Consumption',
+      unit: 'energy',
+    },
+    {
+      name: 'Efficiency',
+      unit: 'efficiency',
+    },
+    ...summary_dollar_rows.map((row) => {
+      return {
+        name: row,
+        unit: 'currency',
+      }
+    }),
+    ...summary_hash_price_rows.map((row) => {
+      console.log(row)
+      return {
+        name: row,
+        unit: 'hashPrice',
+      }
+    }),
+    ...summary_percent_rows.map((row) => {
+      return {
+        name: row,
+        unit: 'percentage',
+      }
+    }),
+    {
+      name: 'BTC, held',
+      unit: 'BTC',
+    }
+  ]
+  return tableRows
+})
+const tableRowsByName = computed(() => {
+  let tableRowsByName = {}
+  tableRows.value.forEach((row) => {
+    tableRowsByName[row.name] = row
+  })
+  return tableRowsByName
+})
+
+const rowFormat = (data, field) => {
+  if (Object.keys(tableRowsByName.value).includes(data.index)) {
+    let unit = tableRowsByName.value[data.index].unit
+    return formatHelpers[unit](data[field])
+  } else {
+    return data[field]
+  }
+}
+
 const rows = computed(() => {
   let tableRows = [
     [
-      'Capacity', 'Compute Power', 'Infra Power', '# of Rigs', 'HR / rig',
+      'Capacity', 'Compute Power', 'Infra Power', 
+      'Number of Rigs', 'HR / rig',
       'Hash Rate',
-      'Total Hashes', 'Energy Use', 'Efficiency'
+      'Total Hashes', 'Energy Consumption', 'Efficiency'
     ],
     ['Rig Costs', 'Total Infra Costs', 'Capital Costs', 'Total Cost'],
     ['Rigs Hash Price', 'Infra Hash Price', 'Build Hash Price', 'Cash Hash Price'],
@@ -61,12 +157,8 @@ const data = computed(() => {
 })
 
 const accounts = ref([])
-const chartSelectItems = computed(() => {
-  if (statStore.byAccount?.datasets)
-    return Object.keys(statStore.byAccount?.datasets)
-  else
-    return null
-})
+const chartWindow = ref(0)
+const accountIndex = ref(0)
 let istat_dollar_accounts = [
   'Revenue - Reward', 'Revenue - Fees', 'Gross Revenue', 'Pool Fees',
   'Net Revenue', 'Energy Expenses', 'Gross Profit', 'Gross Margin',
@@ -83,99 +175,97 @@ let roi_dollar_accounts = [
   'Cumulative Net, sold', 'Cumulative Net, held',
   'ROI, sold', 'ROI, held'
 ]
-const items = [
-  {
-    divider: true,
-  },
+const chartItems = [
+  // {
+  //   header: 'Environment',
+  //   disabled: true,
+  // },
   {   
     title: 'Number of Miners',
-    value: 'Number of Miners',
-    unit: '#'
-  },
-  {
-    title: 'Energy - Miner',
-    value: 'Energy - Miner',
-    unit: 'kWh'
-  },
-  {
-    title: 'Energy - Infra',
-    value: 'Energy - Infra',
-    unit: 'kWh'
-  },
-  {
-    title: 'Energy',
-    value: 'Energy',
-    unit: 'kWh'
+    yTickFormat: 'number',
   },
   {
     title: 'Hash Rate',
-    value: 'Hash Rate',
-    unit: 'TH/s'
+    yTickFormat: 'hashRate'
   },
   {
     title: 'Hashes',
-    value: 'Hashes',
-    unit: 'TH'
+    yTickFormat: 'hashes',
   },
   {
     title: 'Hash Share',
-    value: 'Hash Share',
-    unit: '%'
+    yTickFormat: 'percentage',
+  },
+  {
+    title: 'Energy - Miner',
+    yTickFormat: 'energy',
+  },
+  {
+    title: 'Energy - Infra',
+    yTickFormat: 'energy',
+  },
+  {
+    title: 'Energy',
+    yTickFormat: 'energy',
   },
   {
     title: 'BTC Reward',
-    value: 'BTC Reward',
-    unit: 'BTC'
+    yTickFormat: 'BTC',
   },
   {
     title: 'Transaction Fees',
-    value: 'Transaction Fees',
-    unit: 'BTC'
+    yTickFormat: 'BTC',
   },
   {
     title: 'Pool Fees (\u0243)',
-    value: 'Pool Fees (\u0243)',
-    unit: 'BTC'
+    yTickFormat: 'BTC',
   },
   {
     title: 'BTC Mined',
-    value: 'BTC Mined',
-    unit: 'BTC',
-    description: 'BTC Mined = BTC Reward + Transaction Fees - Pool Fees'
+    yTickFormat: 'BTC',
+    description: 'BTC Mined = BTC Reward + Transaction Fees - Pool Fees',
   },
-  {
-    title: 'Income Statement',
-    value: 'Income Statement',
-    header: true,    
-  },
+  // {
+  //   title: 'Income Statement',
+  //   value: 'Income Statement',
+  //   header: true,    
+  // },
   ...istat_dollar_accounts.map((account) => {
     return {
       title: account,
-      value: account,
-      unit: '$'
+      yTickFormat: 'currency',
     }
   }),
   ...istat_bitcoin_accounts.map((account) => {
     return {
       title: account,
-      value: account,
-      unit: 'BTC'
+      yTickFormat: 'BTC',
     }
   }),
-  {
-    title: 'ROI',
-    value: 'ROI',
-    header: true,    
-  },
+  // {
+  //   title: 'ROI',
+  //   header: true,
+  // },
   ...roi_dollar_accounts.map((account) => {
     return {
       title: account,
-      value: account,
-      unit: '$'
+      yTickFormat: 'currency',
     }
   })
 ]
-console.log(items)
+const chartItemsObject = computed(() => {
+  let obj = {}
+  chartItems.forEach((item) => {
+    obj[item.title] = item
+  })
+  return obj
+})
+const next = () => {
+  accountIndex.value = accountIndex.value >= accounts.value.length - 1 ? 0 : accountIndex.value + 1
+}
+const prev = () => {
+  accountIndex.value = accountIndex.value <= 0 ? accounts.value.length - 1 : accountIndex.value - 1
+}
 </script>
 
 <template>
@@ -183,7 +273,7 @@ console.log(items)
     <v-toolbar 
       density="compact"
       color="surface"
-      class="pt-6"
+      class="pt-2"
     >
       <v-btn-toggle
         v-model="view"
@@ -216,7 +306,7 @@ console.log(items)
         v-model="accounts"
         label="Select accounts"
         class="mt-6 ml-6"
-        :items="items"
+        :items="chartItems"
         multiple
         clearable
         chips
@@ -227,19 +317,49 @@ console.log(items)
       v-if="view === 0 && data?.length > 0"
       :data="data"
       :columns="columns"
+      class="ma-3 pa-6 mb-0 pb-0"
     />
-    <v-container 
+    <v-card
       v-else-if="view === 1 && statStore.byAccount && accounts.length > 0"
-      class="ma-3 d-flex justify-space-around flex-wrap"
+      elevation="0"
+      class="ma-3 pa-6 mb-0 pb-0"
     >
- 
-        <MultiLineChart
-          v-for="account in accounts"
-          :labels="statStore.byAccount?.labels"
-          :datasets="statStore.byAccount?.datasets[account]"
-          :title="account"
-        />
-    </v-container>
+      <MultiLineChart
+        :labels="statStore.byAccount?.labels"
+        :datasets="statStore.byAccount?.datasets[accounts[accountIndex]]"
+        v-bind="chartItemsObject[accounts[accountIndex]]"
+      />
+      <v-card-actions class="justify-space-between">
+        <v-btn
+          variant="plain"
+          icon="mdi-chevron-left"
+          @click="prev"
+        ></v-btn>
+        <v-item-group
+          v-model="accountIndex"
+          class="text-center"
+          mandatory
+        >
+          <v-item
+            v-for="n in accounts.length"
+            :key="`btn-${n - 1}`"
+            v-slot="{ isSelected, toggle }"
+            :value="n - 1"
+          >
+            <v-btn
+              :variant="isSelected ? 'outlined' : 'text'"
+              icon="mdi-record"
+              @click="toggle"
+            ></v-btn>
+          </v-item>
+        </v-item-group>
+        <v-btn
+          variant="plain"
+          icon="mdi-chevron-right"
+          @click="next"
+        ></v-btn>
+      </v-card-actions>
+    </v-card>
   </v-container>
 </template>
   

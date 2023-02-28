@@ -48,7 +48,7 @@ const copy = (project) => {
         density="compact"
         outlined
         clearable
-        class="mt-0"
+        class="mt-0 pl-3"
       >
       <template #append>
         <StatefulBtn
@@ -64,6 +64,7 @@ const copy = (project) => {
         key="create-project"
         value="4"
         append-icon="mdi-plus"
+        class="pl-3 pr-2"
       >
         Create Project
       </v-list-item>
@@ -72,6 +73,7 @@ const copy = (project) => {
         @click="activeIndex = i"
         :key="'project' + i"
         :value="i"
+        class="pl-3 pr-1"
       >
         {{ project.name }}
         <template #append>
@@ -98,10 +100,10 @@ const copy = (project) => {
       <ProjectForm
           v-if="activeIndex === -1"
         />
-        <ProjectForm
-          v-else
-          :project="projects[activeIndex]"
-        />
+      <ProjectForm
+        v-else
+        :project="projects[activeIndex]"
+      />
     </template>
   </MainWindow>
 </template>

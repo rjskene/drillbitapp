@@ -133,7 +133,7 @@ const readyOrNot = (name) => {
         density="compact"
         outlined
         clearable
-        class="mt-0"
+        class="mt-0 pl-3 pr-1"
       >
       <template #append>
         <StatefulBtn
@@ -150,9 +150,11 @@ const readyOrNot = (name) => {
           size="x-small"
           variant="flat"
           :disabled="!store.allLockable"
+          class="mr-0 pr-0"
         />
         <v-btn
           v-else
+          id="div"
           @click="unlockAll"
           icon="mdi-lock"
           variant="flat"
@@ -162,6 +164,7 @@ const readyOrNot = (name) => {
       </v-combobox>
       <v-list-item
         @click="activeIndex = -1"
+        class="pl-3"
       >
         Summary
       </v-list-item>
@@ -170,9 +173,15 @@ const readyOrNot = (name) => {
         @click="activeIndex = i"
         :key="element.text + '-element'"
         :value="element.value"
+        class="pl-3 pr-1"
       >
         {{ element.text }}
         <template #append>
+          <v-icon
+            v-bind="readyOrNot(elementName(element))"
+            class="ml-1 mr-1 pr-0"
+            size="x-small"
+          />
           <StatefulBtn
             @click="create(element)"
             variant="flat"
@@ -186,7 +195,7 @@ const readyOrNot = (name) => {
             icon="mdi-lock"
             variant="flat"
             size="x-small"
-            class="mr-0"
+            class="mr-0 pr-0"
           ></v-btn>
           <v-btn
             v-else
@@ -195,11 +204,8 @@ const readyOrNot = (name) => {
             variant="flat"
             size="x-small"
             :disabled="!lockable(elementName(element))"
+            class="mr-0 pr-0"
             ></v-btn>
-          <v-icon 
-            v-bind="readyOrNot(elementName(element))"
-            class="ml-2"
-          />
         </template>
       </v-list-item>
     </template>
@@ -222,42 +228,4 @@ const readyOrNot = (name) => {
 ::v-deep(.p-skeleton) {
   background-color: rgb(var(--v-theme-surface));
 }
-/* :deep(.v-field__input) {
-  min-height: 0px;
-  max-height: 24px;
-}
-:deep(.v-field-label) {
-  top: 0px;
-}
-:deep(.v-field-label--floating) {
-  visibility: hidden !important;
-}
-:deep(.v-field__field .v-field__input) {
-  padding-bottom: 15px;
-  padding-top: 15px;
-}
-:deep(.v-field__clearable) {
-  padding-top: 2px;
-}
-:deep(.v-input__details) {
-  padding-inline-start: 0px;
-}
-:deep(.v-text-field__prefix){
-  padding-top: 3px !important;
-  padding-bottom: 0px !important;
-  padding-left: 3px !important;
-}
-:deep(.v-text-field__suffix){
-  padding-top: 3px !important;
-  padding-bottom: 0px !important;
-  padding-left: 3px !important;
-}
-:deep(.v-select .v-field .v-field__field .v-field__input) {
-  padding-top: 0px;
-}
-:deep(.v-field__append-inner) {
-  padding-top: 3px;
-  padding-bottom: 0px;
-  padding-right: 0px;
-} */
 </style>
