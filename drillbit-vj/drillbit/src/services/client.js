@@ -51,8 +51,12 @@ class Client {
     let res = await this.client.get(`/${app}/${model}/${pk}/costs/`)
     return res
   }
+  async getProjectTasks({task_id}) {
+    let res = await this.client.get(`/projects/tasks/${task_id}`)
+    return res
+  }
   async getStatSummary({params}) {
-    let res = this.client.get('/projects/statement/summary/', {params})
+    let res = this.client.get('/projects/summary/', {params})
     return res
   }
   async getStatByAccount({params}) {

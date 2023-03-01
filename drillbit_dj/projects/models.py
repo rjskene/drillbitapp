@@ -120,6 +120,7 @@ class ProjectSimulation(ProjectModel):
     project = models.ForeignKey(Project, on_delete=models.PROTECT)
 
 FREQUENCY_CHOICES = (
+    ('10T', '10 Minutes'),
     ('D', 'Daily'),
     ('M', 'Monthly'),
     ('Q', 'Quarterly'),
@@ -132,7 +133,10 @@ class ProjectStatement(ProjectModel):
     env = models.JSONField(default=dict)
     istat = models.JSONField(default=dict)
     roi = models.JSONField(default=dict)
-    profitability = models.JSONField(default=dict)
+
+class ProjectStatementSummary(ProjectModel):
+    sim = models.ForeignKey(ProjectSimulation, on_delete=models.PROTECT)
+    summary = models.JSONField(default=dict)
 
 class Projects(ProjectModel):
     name = models.CharField('Name', max_length=100)

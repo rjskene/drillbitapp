@@ -98,7 +98,6 @@ const tableRows = computed(() => {
       }
     }),
     ...summary_hash_price_rows.map((row) => {
-      console.log(row)
       return {
         name: row,
         unit: 'hashPrice',
@@ -286,6 +285,7 @@ const prev = () => {
         />
         <v-btn
           icon="mdi-chart-bar"
+          :disabled="!statStore.summary"
         />
       </v-btn-toggle>
       <v-divider vertical class="mt-2"></v-divider>

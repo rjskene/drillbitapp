@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import StatefulBtn from '@/components/reuseable/StatefulBtn.vue'
@@ -18,6 +18,8 @@ const envStore = useEnvironmentStore()
 const statStore = useStatementStore()
 const formHelpers = useFormHelpers()
 
+const { tasksComplete } = storeToRefs(statStore)
+
 const activeIndex = ref(-1)
 
 const runSim = () => {
@@ -29,27 +31,20 @@ const runSim = () => {
     params.push({
       environment: envStore.object.id,
       project: project.id,
-      frequency: 'M'
     })
   })
-  return statStore.createObjects({params}).then(() => {
-    try {
-      return statStore.getSummary({
-        params: { 
-          environment: envStore.object.id,
-          projects: projectsStore.object.projects.map((project) => project.id)
-        }
-      })
-    } finally {
-      statStore.getByAccount({
-        params: { 
-          environment: envStore.object.id,
-          projects: projectsStore.object.projects.map((project) => project.id)
-        }
-      })
-    }
-  })
+  return statStore.createObjects({params})
 }
+watchEffect(() => {
+  if (tasksComplete.value) {
+    statStore.getByAccount({params: 
+      {
+        environment: envStore.object.id,
+        projects: projectsStore.object.projects.map((project) => project.id)
+      }
+    })
+  }
+})
 </script>
 
 <template>

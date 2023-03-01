@@ -10,7 +10,9 @@ export const productPlugin = ({store}) => {
   if (!Object.keys(store.$state).includes('object')) {
     store.object = ref(null)
   }
-  store.objects = ref([])
+  if (!Object.keys(store.$state).includes('object')) {
+    store.objects = ref([])
+  }
   store.hasObjects = computed(() => store.objects.length > 0)
   store.hasObject = computed(() => store.object != null)
 
@@ -32,19 +34,20 @@ export const productPlugin = ({store}) => {
   store.setObjects = (objects) => {
     store.objects = objects
   }
-  store.createObjects = async ({params}) => {
-    return client.createObjects({
-      app: store.app, 
-      model: store.dataModel,
-      params
-    }).then((result) => {
-      // If return value is an array, store as objects, else store as object
-      if (Array.isArray(result.data))
-        store.objects = result.data
-      else
-        store.object = result.data
-      })
-      
+  if (!Object.keys(store).includes('createObjects')) {
+    store.createObjects = async ({params}) => {
+      return client.createObjects({
+        app: store.app, 
+        model: store.dataModel,
+        params
+      }).then((result) => {
+        // If return value is an array, store as objects, else store as object
+        if (Array.isArray(result.data))
+          store.objects = result.data
+        else
+          store.object = result.data
+        })  
+    } 
   }
   store.createObject = async ({params}) => {
     return client.createObject({
@@ -285,24 +288,86 @@ export const useSimulationStore = defineStore('simulationStore', () => {
 })
 
 export const useStatementStore = defineStore('statementStore', () => {
+  const envStore = useEnvironmentStore()
+  const projectsStore = useProjectsStore()
   const app = 'projects'
   const dataModel = 'statement'
 
   const summary = ref(null)
   const byAccount = ref(null)
 
+  const object = ref(null)
+  const objects = ref([])
+
+  const taskStatuses = ref({})
+  const tasksComplete = computed(() => {
+    return Object.values(taskStatuses.value).length > 0 
+      && Object.values(taskStatuses.value).every((status) => status === 'SUCCESS')
+  })        
+
+  const checkTaskComplete = (task_id, interval, callback) => {
+    var counter = 0
+    let intervalId = setInterval(() => {
+      client.getProjectTasks({task_id}).then((result) => {
+        try {
+          if (result.data.state === 'SUCCESS') {
+            clearInterval(intervalId)
+            callback(result.data)
+          } else {
+            counter++
+            if (counter > 10) {
+              clearInterval(intervalId)
+              throw new Error('Max retries exceeded')
+            }
+          }
+        } catch (err) {
+          console.error(err)
+          clearInterval(intervalId)
+        }
+      })
+    }, interval)
+  } 
+  const fetchStatus = () => {
+    Object.keys(taskStatuses.value).forEach((task_id) => {
+      checkTaskComplete(task_id, 1000, (result) => {
+        taskStatuses.value[task_id] = result.state
+      })
+    })
+  }
+  const createObjects = async ({params}) => {
+    return client.createObjects({
+      app, 
+      model: dataModel,
+      params
+    }).then((result) => {
+      let summParams = {
+        environment: envStore.object.id,
+        projects: projectsStore.object.projects.map((project) => project.id)
+      }
+      getSummary({params: summParams})
+      let task_ids = result.data.map((obj) => obj['M'])
+      taskStatuses.value = {} // need to reset 
+      task_ids.forEach((task_id) => {taskStatuses.value[task_id] = null})
+      
+      fetchStatus()
+    })
+  }
+
   const getSummary = async ({params}) => {
     return client.getStatSummary({params}).then((result) => { 
         summary.value = result.data
-        console.log(summary.value)
     })
   }
   const getByAccount = async ({params}) => {
     return client.getStatByAccount({params}).then((result) => { 
       byAccount.value = result.data
     })
+  }  
+  return { 
+    app, dataModel, object, objects, createObjects, summary, getSummary, 
+    byAccount, getByAccount,
+    taskStatuses, tasksComplete
   }
-  return { app, dataModel, summary, getSummary, byAccount, getByAccount }
   }, {
     persist: {
       storage: sessionStorage,

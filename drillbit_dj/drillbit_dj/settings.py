@@ -133,6 +133,10 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:8081',
 ]
 
+# Celery Settings
+CELERY_BROKER_URL = "redis://localhost:6379"
+CELERY_RESULT_BACKEND = "redis://localhost:6379"
+
 # LOGGING = {
 #    'version': 1,
 #    'disable_existing_loggers': False,
