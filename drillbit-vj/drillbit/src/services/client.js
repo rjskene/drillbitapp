@@ -52,7 +52,11 @@ class Client {
     return res
   }
   async getProjectTasks({task_id}) {
-    let res = await this.client.get(`/projects/tasks/${task_id}`)
+    let res = await this.client.get(`/projects/tasks/${task_id}/`)
+    return res
+  }
+  async checkStatementExists({params}) {
+    let res = await this.client.get('/projects/statement/exists/', {params})
     return res
   }
   async getStatSummary({params}) {

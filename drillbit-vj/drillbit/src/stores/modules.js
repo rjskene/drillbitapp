@@ -16,8 +16,8 @@ export const productPlugin = ({store}) => {
   store.hasObjects = computed(() => store.objects.length > 0)
   store.hasObject = computed(() => store.object != null)
 
-  store.getObjects = async () => {
-    return client.getObjects({app: store.app, model: store.dataModel})
+  store.getObjects = async (params=null) => {
+    return client.getObjects({app: store.app, model: store.dataModel, params})
       .then((result) => {
         store.objects = result.data
       })
@@ -140,14 +140,21 @@ export const useBlockScheduleStore = defineStore('blockScheduleStore', () => {
 })
 function useForecastModelForm() {
   const blockStore = useBlockScheduleStore()
-
+  const stateStore = useCurrentStateStore()
+  const {objects: stateObject } = storeToRefs(stateStore)
+  
   const formParams = ref({
     model: 'GBM',
     initial: 20000,
     mean: .000025,
-    volatility: .0025,
+    volatility: .00701,
 
   })
+  watch(stateObject, (object) => {
+    if (object)
+      formParams.value.initial = object.Price
+  })
+
   const createParams = computed(() => {
     const params = {...formParams.value}
     params.blocks = blockStore.object?.id
@@ -335,24 +342,29 @@ export const useStatementStore = defineStore('statementStore', () => {
     })
   }
   const createObjects = async ({params}) => {
-    return client.createObjects({
-      app, 
-      model: dataModel,
-      params
-    }).then((result) => {
-      let summParams = {
-        environment: envStore.object.id,
-        projects: projectsStore.object.projects.map((project) => project.id)
-      }
-      getSummary({params: summParams})
-      let task_ids = result.data.map((obj) => obj['M'])
-      taskStatuses.value = {} // need to reset 
-      task_ids.forEach((task_id) => {taskStatuses.value[task_id] = null})
-      
-      fetchStatus()
-    })
+    var objParams = {
+      environment: envStore.object.id,
+      projects: projectsStore.object.projects.map((project) => project.id)
+    }
+    const res = await client.checkStatementExists({params: objParams})
+    if (res.data) {
+      getSummary({params: objParams})
+      getByAccount({params: objParams})
+    } else { 
+      return client.createObjects({
+        app, 
+        model: dataModel,
+        params
+      }).then((result) => {
+        getSummary({params: objParams})
+        let task_ids = result.data.map((obj) => obj['M'])
+        taskStatuses.value = {} // need to reset 
+        task_ids.forEach((task_id) => {taskStatuses.value[task_id] = null})
+        
+        fetchStatus()
+      })
+    } 
   }
-
   const getSummary = async ({params}) => {
     return client.getStatSummary({params}).then((result) => { 
         summary.value = result.data
@@ -374,6 +386,13 @@ export const useStatementStore = defineStore('statementStore', () => {
     },
   }
 )
+
+export const useCurrentStateStore = defineStore('currentStateStore', () => {
+  const app = 'environment'
+  const dataModel = 'current-state'
+
+  return { app, dataModel }
+})
 
 export const useEnvironmentStore = defineStore('environmentStore', () => {
   const app = 'environment'

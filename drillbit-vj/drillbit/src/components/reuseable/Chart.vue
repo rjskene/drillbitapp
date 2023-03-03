@@ -118,7 +118,7 @@ const chartOptions = computed(() => {
           display: false,
         },
         ticks: { 
-          callback: (value, index, ticks) => props.xTickPrefix + format.numberWithCommas(value) + props.xTickSuffix,
+          callback: (value, index, ticks) => props.xTickPrefix + format.number(value) + props.xTickSuffix,
         }
       }
     }

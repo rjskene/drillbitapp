@@ -5,6 +5,10 @@
   const toggleDrawer = () => {
     globalState.$patch({drawer: !globalState.drawer})
   }
+  const clearStorage = () => {
+    localStorage.clear()
+    sessionStorage.clear()
+  }
 </script>
     
 <template>
@@ -16,6 +20,10 @@
       @click="toggleDrawer"
     />
     <v-toolbar-title class="font-weight-bold">DrillBit</v-toolbar-title>
+    <v-btn
+      icon="mdi-trash-can-outline"
+      @click="clearStorage"
+    />
   </v-app-bar>
 </template>
         

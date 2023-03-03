@@ -34,8 +34,8 @@ const columns = computed(() => {
     {
       field: 'name',
       header: 'Name', 
-      headerClass: 'table-header-center',
-      bodyClass: 'table-body-center min-col-width-7dot5',
+      headerClass: 'table-header-left',
+      class: 'table-body-left min-col-width-7dot5',
       editor: {
         component: InputText,
       },
@@ -45,15 +45,15 @@ const columns = computed(() => {
         args: {
           type: 'text',
           placeholder: 'Search',
-          // class: 'p-inputtext-sm min-col-width-5',
         }
       }
     },
     {
-      field: 'power',
-      header: 'Power',
-      headerClass: 'table-header-center',
-      bodyClass: 'table-body-center min-col-width-2dot5',
+      field: 'capacity',
+      header: 'Capacity',
+      dataType: 'numeric',
+      headerClass: 'table-header-center min-col-width-2dot5',
+      class: 'table-body-center min-col-width-2dot5',
       bodyFunc: format.power,
       editor: {
         component: InputNumber,
@@ -61,14 +61,24 @@ const columns = computed(() => {
           mode: 'decimal',
           locale: "en-US",
           suffix: ' W',
+          class: 'edit-width-75'
         }
       },
+      filter: {
+        component: InputNumber,
+        event: 'input',
+        args: {
+          mode: 'decimal',
+          locale: "en-US",
+          placeholder: 'Search',
+        }
+      }
     },
     {
       field: 'pue',
       header: 'PUE',
       headerClass: 'table-header-center',
-      bodyClass: 'table-body-center min-col-width-2dot5',
+      class: 'table-body-center min-col-width-2dot5',
       editor: {
         component: InputNumber,
         args: {
@@ -76,6 +86,7 @@ const columns = computed(() => {
           locale: "en-US",
           minimumFractionDigits: 2,
           suffix: ' x',
+          class: 'edit-width-75'
         }
       },
     },
@@ -83,13 +94,14 @@ const columns = computed(() => {
       field: 'number_of_rigs',
       header: 'Rigs',
       headerClass: 'table-header-center',
-      bodyClass: 'table-body-center min-col-width-2dot5',
+      class: 'table-body-center min-col-width-2dot5',
       editor: {
         component: InputNumber,
         args: {
           mode: 'decimal',
           locale: "en-US",
           minimumFractionDigits: 2,
+          class: 'edit-width-75'
         }
       },
     },
@@ -97,14 +109,15 @@ const columns = computed(() => {
       field: 'price',
       header: 'Price',
       headerClass: 'table-header-center',
-      bodyClass: 'table-body-right min-col-width-2dot5 padding-right-1',
+      class: 'table-body-right min-col-width-2dot5 padding-right-1',
       bodyFunc: format.currency,
       editor: {
         component: InputNumber,
         args: {
           mode: 'currency',
           locale: "en-US",
-          currency: 'USD'
+          currency: 'USD',
+          class: 'edit-width-75'
         }
       },
     },
@@ -115,6 +128,8 @@ const columns = computed(() => {
 
 const filters = {
   'name': {value: null, matchMode: FilterMatchMode.CONTAINS},
+  'capacity': {value: null, matchMode: FilterMatchMode.EQUALS},
+
 }
 const objManager = ref(useObjectManager({store: tabsObj.value[currentTab.value]}))
 watch(currentTab, (currentTab, oldVal) => {
@@ -147,6 +162,7 @@ watch(currentTab, (currentTab, oldVal) => {
           v-for="tab in tabs"
           :key="tab + '-Window'"
           :value="tab.text"
+          class="ma-12 pa-12"
         >
           <CrudTable
             v-if="tab.store.hasObjects"
@@ -159,6 +175,7 @@ watch(currentTab, (currentTab, oldVal) => {
             @delete="({data}) => tab.store.$patch({objects: data})"
             @save="objManager.save()"
             :save-state="objManager.saveState"
+            scroll-direction="vertical"
           />
         </v-window-item>
       </v-window>
@@ -170,4 +187,5 @@ watch(currentTab, (currentTab, oldVal) => {
   background-color: rgb(var(--v-theme-surface));
 
 }
+
 </style>

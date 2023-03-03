@@ -353,16 +353,17 @@ const updateCosts = (pk) => {
     </v-row>
   </v-form>
   <v-divider v-if="project.hasOwnProperty('id')"></v-divider>
-  <v-row v-if="project.hasOwnProperty('id')">
+  <v-row class="my-6" v-if="project.hasOwnProperty('id')">
     <v-col>
-      <v-card-title class="mt-3">Costs</v-card-title>
+      <v-card-subtitle class="mt-3">Costs</v-card-subtitle>
       <v-btn
         @click="updateCosts(project.id)"
         variant="outlined"
+        class="ml-3 my-3"
       >
         Scale
       </v-btn>
-      <v-sheet class="mx-6">  
+      <v-sheet class="mx-6">
         <ProjectCostsTable v-if="costs" :costs="costs" />
       </v-sheet>
     </v-col>

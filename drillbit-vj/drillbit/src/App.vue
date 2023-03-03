@@ -12,6 +12,7 @@ import {
   useElectricalStore,
   useEnvironmentStore,
   useProjectsStore,
+  useCurrentStateStore,
   } from './stores/modules'
 
 const rigStore = useRigStore()
@@ -26,6 +27,8 @@ const environmentStore = useEnvironmentStore()
 environmentStore.getObjects()
 const projectsStore = useProjectsStore()
 projectsStore.getObjects()
+const stateStore = useCurrentStateStore()
+stateStore.getObjects()
 
 </script>
 

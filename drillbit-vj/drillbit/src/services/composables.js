@@ -30,6 +30,9 @@ export function useFormatHelpers() {
   const BTC = (value) => {
     return '\u20BF ' + value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
   }
+  const T = (value) => {
+    return (value / 1e12).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + 'T'
+  }
   const currency = (value, style='') => {
     let NF = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
     if (style === 'M')
@@ -89,7 +92,7 @@ export function useFormatHelpers() {
     let units = ['$/H', '$/KH', '$/MH', '$/GH', '$/TH', '$/PH', '$/EH', '$/ZH', '$/YH', '$/RH']
     return inverseScaler(value, units)
   }
-  return { percentage, number, BTC, currency, hashes, hashRate, power, energy, efficiency, hashPrice }
+  return { percentage, number, BTC, currency, T, hashes, hashRate, power, energy, efficiency, hashPrice }
 }
 
 const format = useFormatHelpers()

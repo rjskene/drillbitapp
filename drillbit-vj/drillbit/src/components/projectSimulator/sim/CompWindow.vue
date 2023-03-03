@@ -324,6 +324,7 @@ const prev = () => {
       elevation="0"
       class="ma-3 pa-6 mb-0 pb-0"
     >
+      <span class="text-caption font-italic">*Values are monthly aggregates</span>
       <MultiLineChart
         :labels="statStore.byAccount?.labels"
         :datasets="statStore.byAccount?.datasets[accounts[accountIndex]]"

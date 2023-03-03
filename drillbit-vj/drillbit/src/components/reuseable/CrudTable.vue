@@ -35,6 +35,14 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  filterDisplay: {
+    type: String,
+    default: 'menu'
+  },
+  scrollDirection: {
+    type: String,
+    default: 'horizontal'
+  },
 })
 const { name, data } = toRefs(props)  // data is a reactive ref
 const dtable = ref(null) // used to access Datatable component refs
@@ -110,14 +118,15 @@ defineExpose({dtable})
     ref="dtable"
     dataKey="id"
     :value="data"
-    filterDisplay="row"
+    :filterDisplay="props.filterDisplay"
     selectionMode="multiple"
     @row-edit-save="event => onRowEditSave(event, data)"
     v-model:selection="selections"
     v-model:filters="filters"
     v-model:editingRows="editingRows"
     :scrollable="true"
-    scrollDirection="horizontal"
+    :showFilterMatchModes="true"
+    :scrollDirection="props.scrollDirection"
     sortMode="multiple"
     removableSort
     class="p-datatable-sm mt-3"
@@ -127,15 +136,17 @@ defineExpose({dtable})
     <Column v-if="props.edit" :rowEditor="true" :exportable="false" frozen/>
     <Column
       v-for="col of columns"
-      :field="col.field"
+      v-bind="col"
+      >
+      <!-- :field="col.field"
       :header="col.header"
+      :dataType="col.dataType"
       :headerClass="col.headerClass"
       :class="col.bodyClass"
       :key="col.field"
       :sortable="true"
       :frozen="col.frozen"
-      :hidden="col.hidden"
-    >
+      :hidden="col.hidden" -->
       <template v-if="col.editor" #editor="{data, field}">
         <component
           :is="col.editor.component"
@@ -273,7 +284,24 @@ defineExpose({dtable})
   color: rgb(var(--v-theme-on-surface-01dp)) !important;
   border-color: var(--surface-24dp) !important;
 }
-:deep(.p-cell-editing.p-frozen-column) {
-  width: 425px;
+:deep(.p-frozen-column) {
+  max-width: 3rem;
+}
+:deep(.p-column-filter-row) {
+  width: 75%;
+}
+
+
+:deep(.edit-width-50.p-inputnumber) {
+  width: 50%;
+}
+:deep(.edit-width-50 > .p-inputtext) {
+  width: 50%;
+}
+:deep(.edit-width-75.p-inputnumber) {
+  width: 50%;
+}
+:deep(.edit-width-75 > .p-inputtext) {
+  width: 50%;
 }
 </style>
