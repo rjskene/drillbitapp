@@ -1,14 +1,17 @@
 <script setup>
-  import { useGlobalStateStore } from '../stores/globalState'
-  const globalState = useGlobalStateStore()
+import BTCSummaryBtn from '@/components/BTCSummaryBtn.vue'
+import { useGlobalStateStore } from '../stores/globalState'
 
-  const toggleDrawer = () => {
-    globalState.$patch({drawer: !globalState.drawer})
-  }
-  const clearStorage = () => {
-    localStorage.clear()
-    sessionStorage.clear()
-  }
+const globalState = useGlobalStateStore()
+
+const toggleDrawer = () => {
+  globalState.$patch({drawer: !globalState.drawer})
+}
+const clearStorage = () => {
+  localStorage.clear()
+  sessionStorage.clear()
+  window.location.reload()
+}
 </script>
     
 <template>
@@ -20,6 +23,7 @@
       @click="toggleDrawer"
     />
     <v-toolbar-title class="font-weight-bold">DrillBit</v-toolbar-title>
+    <BTCSummaryBtn/>
     <v-btn
       icon="mdi-trash-can-outline"
       @click="clearStorage"

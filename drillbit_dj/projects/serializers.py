@@ -17,7 +17,7 @@ from .models import RigForProject, InfraForProject, Project, Projects, \
 from environment.models import Environment
 from environment.serializers import BlockScheduleSerializer, BitcoinPriceSerializer, \
     TransactionFeesSerializer, HashRateSerializer, BitcoinUtilityInitMixin
-from products.models import Rig, Cooling, HeatRejection, Electrical
+from products.models import Rig, Cooling, HeatRejection, Electrical, RejectionCurve
 from products.serializers import RigSerializer, CoolingSerializer, HeatRejectionSerializer, ElectricalSerializer
 
 class StatementFromJSONConversionField(serializers.JSONField):
@@ -341,6 +341,8 @@ class ProjectCostsSerializer(serializers.ModelSerializer):
                 product['product'] = k
                 restructured_data['product'].append(product)
         
+        print (restructured_data)
+
         return restructured_data
 
 class ProjectSimulationSerializer(serializers.ModelSerializer):
@@ -384,44 +386,10 @@ class ProjectStatementSerializer(
             'frequency'
         )
 
-    # def to_representation(self, instance):
-    #     """
-    #     Override the default representation to add the `frequency` field for the
-    #     `istat` and `roi` fields
-
-    #     Copied directly from https://www.cdrf.co/3.13/rest_framework.serializers/ModelSerializer.html
-    #     """
-    #     from collections import OrderedDict
-    #     from rest_framework.fields import SkipField
-    #     from rest_framework.relations import PKOnlyObject
-
-    #     ret = OrderedDict()
-    #     fields = self._readable_fields
-    #     for field in fields:
-    #         try:
-    #             attribute = field.get_attribute(instance)
-    #         except SkipField:
-    #             continue
-
-    #         check_for_none = attribute.pk if isinstance(attribute, PKOnlyObject) else attribute
-    #         if check_for_none is None:
-    #             ret[field.field_name] = None
-    #         else:
-    #             # Here is customization that allows serializer to accept `frequency` as
-    #             # an argument and pass it to the `to_representation` method of the
-    #             # `StatementFromJSONConversionField` fields
-    #             if isinstance(field, StatementFromJSONConversionField):
-    #                 ret[field.field_name] = field.to_representation(attribute, frequency=self.frequency)
-    #             else:
-    #                 ret[field.field_name] = field.to_representation(attribute)
-
-    #     return ret
-
     def create(self, validated_data):
         data = validated_data.copy()
         sim, created = ProjectSimulation.objects.get_or_create(**data['sim'])
         frequency = data.pop('frequency')
-
         try:
             obj = ProjectStatement.objects.get(sim=sim, frequency=frequency)
         except ProjectStatement.DoesNotExist:
@@ -434,8 +402,7 @@ class ProjectStatementSerializer(
                     raise serializers.ValidationError((
                         'You must save the block level '
                         'statements first.'
-                    ))               
-
+                    ))
                 env = load_json_block_statement_and_resample(obj.env, frequency)
                 istat = load_json_block_statement_and_resample(obj.istat, frequency)
                 roi = load_json_block_statement_and_resample(obj.roi, frequency)
@@ -490,11 +457,32 @@ def load_json_block_statement_and_resample(value, frequency):
     value = json.loads(value)
     df = pd.DataFrame(value)
 
-    df.columns = pd.to_datetime(df.columns).to_period(freq='10T')
+    # have to catch different formats between ROI and others
+    if len(df.columns[0]) == 7:
+        fmt = '%Y-%m'
+    else:
+        fmt = '%d-%m-%y %H:%M'
+
+    df.columns = pd.to_datetime(df.columns, format=fmt)
     # HERE I NEED DIFFERENT RESAMPLE FUNCTIONS FOR DIFFERENT
     # ROWS .....!!!!!
-    df = df.T.resample(frequency).sum().T
+    last = [
+        'Number of Rigs',   
+    ]
+    mean = [
+        'Hash Rate', # technically INCORRECT; should add up all hashes in period, divide by seconds in period
+        'Hash Share',
+    ]
+    aggs = {}
+    for index in df.index:
+        if index in last:
+            aggs[index] = 'last'
+        elif index in mean:
+            aggs[index] = 'mean'
+        else:
+            aggs[index] = 'sum'
 
+    df = df.T.resample(frequency).agg(aggs).T
     df.columns = df.columns.strftime('%Y-%m-%d')
     
     return df.to_json()

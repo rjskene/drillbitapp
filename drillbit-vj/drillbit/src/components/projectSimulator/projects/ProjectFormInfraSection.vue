@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, toRefs } from 'vue'
 import { useVModel } from '@vueuse/core'
-import { useGlobalStateStore } from '../../stores/globalState'
+import { useGlobalStateStore } from '@/stores/globalState'
 import { 
   useCoolingStore,
   useRejectionStore,
@@ -91,7 +91,7 @@ const object = computed(() => {
     </v-col>
     <v-col cols="2" class="d-flex align-center pl-12 pt-0">
       <span class="text-body-2 text-medium-emphasis mr-3">Power:</span>
-      {{ format.power(object?.power) }}
+      {{ format.power(object?.capacity) }}
     </v-col>
     <v-col cols="1" class="d-flex align-center pl-6 pt-0">
       <span class="text-body-2 text-medium-emphasis mr-3">PUE:</span>

@@ -11,6 +11,7 @@ router.register('hash-rate', views.HashRateViewSet, basename='hash-rate')
 router.register('environment', views.EnvironmentViewSet, basename='environment')
 
 urlpatterns = [
+    path('current-state/', views.get_current_state, name='current-state')
 ]
 
 urlpatterns += router.urls

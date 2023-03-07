@@ -33,7 +33,7 @@ const columns = computed(() => {
         header: project.name, 
         headerClass: 'table-header-center',
         bodyClass: 'table-body-center min-col-width-7dot5',
-        bodyFunc: rowFormat,
+        bodyFuncWithDataAccess: rowFormat,
       })
     })
 

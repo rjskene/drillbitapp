@@ -6,10 +6,15 @@ from . import views
 router = DefaultRouter()
 router.register('rig', views.RigViewSet, basename='rig') 
 router.register('cooling', views.CoolingViewSet, basename='cooling') 
-router.register('heat-rejection', views.HeatRejectionViewSet, basename='heat-rejection') 
-router.register('electrical', views.ElectricalViewSet, basename='electrical') 
+router.register('heat-rejection', views.HeatRejectionViewSet, basename='heat-rejection')
+router.register('heat-rejection-curve', views.RejectionCurveForProductViewSet, basename='heat-rejection-curve')
+router.register('electrical', views.ElectricalViewSet, basename='electrical')
+router.register('weather-stations', views.WeatherStationViewSet, basename='weather-station')
+router.register('weather-data', views.WeatherDataViewSet, basename='weather-data')
 
 urlpatterns = [
+    path('weather-stations/regions/', views.get_weather_station_regions, name='weather-station-regions'),
+    # path('weather-data/<str:type>/<str:variable>/<str:station_id>', views.get_progress, name='task-status'),
 ]
 
 urlpatterns += router.urls

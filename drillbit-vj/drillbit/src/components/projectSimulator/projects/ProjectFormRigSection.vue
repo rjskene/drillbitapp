@@ -1,11 +1,9 @@
 <script setup>
 import { ref, computed, toRefs } from 'vue'
 import { useVModel } from '@vueuse/core'
-import { useGlobalStateStore } from '../../stores/globalState'
+import { useGlobalStateStore } from '@/stores/globalState'
 import { useRigStore } from '@/stores/modules'
 import { useFormatHelpers, useFormHelpers } from '@/services/composables'
-
-import StatefulBtn from './StatefulBtn.vue'
 
 const globalState = useGlobalStateStore()
 const store = useRigStore()

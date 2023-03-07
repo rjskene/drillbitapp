@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'environment.apps.EnvironmentConfig',
     'projects.apps.ProjectsConfig',
     'django_extensions',
+    'django_filters',
     'rest_framework',
     'corsheaders',
 ]

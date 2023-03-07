@@ -67,6 +67,10 @@ class Client {
     let res = this.client.get('/projects/statement/projects_by_account/', {params})
     return res
   }
+  async getWeatherStationRegions() {
+    let res = await this.client.get('/products/weather-stations/regions/')
+    return res
+  }
 }
 
 const client = new Client()

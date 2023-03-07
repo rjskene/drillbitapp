@@ -1,7 +1,7 @@
 <script setup>
 import { ref, toRefs, computed, defineProps, defineEmits, defineExpose } from 'vue'
 
-import SimpleTable from './reuseable/SimpleTable.vue'
+import SimpleTable from '@/components/reuseable/SimpleTable.vue'
 import { useFormatHelpers, TableMaker } from '@/services/composables'
 
 const format = useFormatHelpers()
@@ -35,6 +35,7 @@ const columns = computed(() => {
     header: 'Quantity',
     headerClass: 'table-header-center',
     bodyClass: 'table-body-center min-col-width-7dot5',
+    bodyFunc: format.number,
   },
   {
     field: 'total_cost',

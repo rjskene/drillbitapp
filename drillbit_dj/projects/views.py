@@ -1,4 +1,8 @@
+import json
 import pandas as pd
+
+from celery.result import AsyncResult
+from django.http import HttpResponse
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -10,6 +14,7 @@ from .serializers import RigForProjectSerializer, InfraForProjectSerializer, Pro
     ProjectSimulationSerializer, ProjectStatementSerializer, \
     ProjectStatementSummarySerializer
 from .tasks import create_statements_for_given_project
+from environment.models import Environment
 
 class RigForProjectViewSet(viewsets.ModelViewSet):
     serializer_class = RigForProjectSerializer
@@ -97,16 +102,40 @@ class ProjectStatementViewSet(viewsets.ModelViewSet):
             task = create_statements_for_given_project(**data)
             tasks.append(task)
 
-        headers = self.get_success_headers(serializer.data)
+        # headers = self.get_success_headers(serializer.data)
         return Response(
             tasks,
             status=status.HTTP_201_CREATED, 
-            headers=headers
         )
+
+    @action(detail=False, methods=['get'], name='Check Statement Exists')
+    def exists(self, request, *args, **kwargs):
+        environment = request.query_params.get('environment', None)
+        projects = request.GET.getlist('projects[]', None)
+        frequency = request.query_params.get('frequency', 'M')
+        
+        try:
+            environment = Environment.objects.get(pk=environment)
+        except Environment.DoesNotExist:
+            return Response(False)
+
+        proj_objs = Project.objects.filter(pk__in=projects)
+        if proj_objs.count() != len(projects):
+            return Response(False)
+
+        sims = ProjectSimulation.objects.filter(environment=environment, project__in=proj_objs)
+        if sims.count() != len(projects):
+            return Response(False)
+
+        stats = ProjectStatement.objects.filter(sim__in=sims, frequency=frequency)
+        if stats.count() != len(projects):
+            return Response(False)
+
+        return Response(True)
 
     @action(detail=False, methods=['get'], name='Project Statement Accounts')
     def projects_by_account(self, request, *args, **kwargs):
-        environment = request.query_params.get('environment', None)    
+        environment = request.query_params.get('environment', None) 
         projects = request.GET.getlist('projects[]', None)
         frequency = request.query_params.get('frequency', 'M')
 
@@ -138,6 +167,10 @@ class ProjectStatementViewSet(viewsets.ModelViewSet):
         ) \
         .reorder_levels([1,0]) \
         .sort_index()
+
+        df.columns = pd.to_datetime(df.columns)
+        df = df.T.sort_index().T
+        df.columns = df.columns.strftime('%Y-%m')
 
         response = {
             'labels': df.columns,
@@ -202,14 +235,7 @@ class ProjectsViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectsSerializer
     queryset = Projects.objects.all()
 
-
-from django.http import HttpResponse
-from celery.result import AsyncResult
-import json
-
 def get_progress(request, task_id):
-    print (request, task_id)
-
     result = AsyncResult(task_id)
     response_data = {
         'state': result.state,

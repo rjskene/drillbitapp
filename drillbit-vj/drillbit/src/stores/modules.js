@@ -2,10 +2,15 @@ import { ref, computed, watch } from 'vue'
 import { defineStore, storeToRefs } from 'pinia'
 import { useStorage } from '@vueuse/core'
 
-
 import client from '../services/client'
 import { useGlobalStateStore } from './globalState'
 
+import { getTodayAsString, useFormHelpers, useEnviroForm } from '../services/composables'
+const {nameRules, numberRules, numberIfNotNullRules, startDateRules, endDateRules} = useFormHelpers()
+
+// Plugin containing common methods used amongst all stores
+// Some methods can be overwritten by the store; these are captured in the if statements
+// checking for the existence of the attribute (store.$state) or method in the store
 export const productPlugin = ({store}) => {
   if (!Object.keys(store.$state).includes('object')) {
     store.object = ref(null)
@@ -93,13 +98,13 @@ export const productPlugin = ({store}) => {
   }
 }
 
+/* PRODUCT STORES */
 export const useRigStore = defineStore('rigStore', () => {
   const app = 'products'
   const dataModel = 'rig'
 
   return { app, dataModel }
 })
-
 export const useCoolingStore = defineStore('coolingStore', () => {
   const app = 'products'
   const dataModel = 'cooling'
@@ -118,10 +123,38 @@ export const useElectricalStore = defineStore('electricalStore', () => {
 
   return { app, dataModel }
 })
+export const useCurveStore = defineStore('curveStore', () => {
+  const app = 'products'
+  const dataModel = 'heat-rejection-curve'
 
-import { getTodayAsString, useFormHelpers, useEnviroForm } from '../services/composables'
-const {nameRules, numberRules, numberIfNotNullRules, startDateRules, endDateRules} = useFormHelpers()
+  return { app, dataModel }
+})
+export const useWeatherStationStore = defineStore('weatherStationStore', () => {
+  const app = 'products'
+  const dataModel = 'weather-stations'
 
+  const regions = ref([])
+
+  const getRegions = async () => {
+    return client
+      .getWeatherStationRegions()
+      .then((result) => {
+        regions.value = result.data
+      })
+  }
+
+  return { app, dataModel, getRegions, regions }
+})
+export const useWeatherDataStore = defineStore('weatherDataStore', () => {
+  const app = 'products'
+  const dataModel = 'weather-data'
+
+  return { app, dataModel }
+
+})
+
+
+/* ENVIRONMENT STORES */
 export const useBlockScheduleStore = defineStore('blockScheduleStore', () => {
   
   const app = 'environment'
@@ -316,6 +349,7 @@ export const useStatementStore = defineStore('statementStore', () => {
     var counter = 0
     let intervalId = setInterval(() => {
       client.getProjectTasks({task_id}).then((result) => {
+        console.log('checking for complete task???', counter)
         try {
           if (result.data.state === 'SUCCESS') {
             clearInterval(intervalId)

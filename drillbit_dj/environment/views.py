@@ -66,3 +66,13 @@ class HashRateViewSet(EnvironmentViewSetMixin, viewsets.ModelViewSet):
 class EnvironmentViewSet(viewsets.ModelViewSet):
     serializer_class = EnvironmentSerializer
     queryset = Environment.objects.all()
+
+import json
+from django.http import HttpResponse
+def get_current_state(request):
+    if 'update' in request.GET:
+        update = json.loads(request.GET['update'])
+        if update:
+            btc.update_meta()
+
+    return HttpResponse(btc.summary().to_json(), content_type='application/json')

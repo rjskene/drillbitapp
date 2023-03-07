@@ -3,9 +3,9 @@ import { ref, computed, toRefs, watch } from 'vue'
 import { useRefHistory, useAsyncState } from '@vueuse/core'
 
 import StatefulBtn from '@/components/reuseable/StatefulBtn.vue'
-import ProjectFormInfraSection from '@/components/reuseable/ProjectFormInfraSection.vue'
-import ProjectFormRigSection from '@/components/reuseable/ProjectFormRigSection.vue'
-import ProjectCostsTable from '@/components/ProjectCostsTable.vue'
+import ProjectFormInfraSection from './ProjectFormInfraSection.vue'
+import ProjectFormRigSection from './ProjectFormRigSection.vue'
+import ProjectCostsTable from './ProjectCostsTable.vue'
 
 import { 
   useProjectStore,
@@ -201,6 +201,7 @@ const costs = ref(null)
 const updateCosts = (pk) => {
   store.scale(pk).then(async () => {
     costs.value = await store.costs(pk)
+    console.log(costs.value)
   })
 }
 </script>

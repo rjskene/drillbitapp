@@ -77,6 +77,15 @@
 .max-col-width-5 {
   max-width: 5rem
 }
+.max-col-width-6dot25 {
+  max-width: 6.25rem
+}
+.max-col-width-6dot75 {
+  max-width: 6.75rem
+}
+.max-col-width-7 {
+  max-width: 7rem
+}
 .max-col-width-7dot5 {
   max-width: 7.5srem
 }

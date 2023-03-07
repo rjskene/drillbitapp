@@ -27,8 +27,11 @@ export function useFormatHelpers() {
   const number = (value) => {
     return value.toFixed(0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
   }
+  const temperature = (value) => {
+    return value.toFixed(0) + '°F'
+  }
   const BTC = (value) => {
-    return '\u20BF ' + value.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+    return '\u20BF ' + value.toFixed(0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
   }
   const T = (value) => {
     return (value / 1e12).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + 'T'
@@ -49,7 +52,7 @@ export function useFormatHelpers() {
       i++
     }
     if (value)
-      return value.toFixed(2) + ' ' + units[i]
+      return value.toFixed(0) + ' ' + units[i]
     else
       return null
   }
@@ -63,7 +66,7 @@ export function useFormatHelpers() {
       i++
     }
     if (value)
-      return value.toFixed(2) + ' ' + units[i]
+      return value.toFixed(0) + ' ' + units[i]
     else
       return null
   }  
@@ -92,7 +95,7 @@ export function useFormatHelpers() {
     let units = ['$/H', '$/KH', '$/MH', '$/GH', '$/TH', '$/PH', '$/EH', '$/ZH', '$/YH', '$/RH']
     return inverseScaler(value, units)
   }
-  return { percentage, number, BTC, currency, T, hashes, hashRate, power, energy, efficiency, hashPrice }
+  return { percentage, number, temperature, BTC, currency, T, hashes, hashRate, power, energy, efficiency, hashPrice }
 }
 
 const format = useFormatHelpers()

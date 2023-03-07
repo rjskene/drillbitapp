@@ -2,11 +2,11 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 
 export var navRoutes = [
-  // {text: 'Tool', name:'tool', link:'/'},
   {text: 'Project Simulator', name:'sim', link:'/'},
   {text: 'Environments', name:'enviro', link: '/environments'},
   {text: 'Rigs', name:'rigs', link: '/rigs'},
   {text: 'Infrastructure', name:'infra', link: '/infrastructure'},
+  {text: 'Dry Bulb', name: 'dry-bulb', link:'/dry-bulb'},
   {text: 'Test', name:'test', link: '/test'}
 ]
 

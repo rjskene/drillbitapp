@@ -138,15 +138,6 @@ defineExpose({dtable})
       v-for="col of columns"
       v-bind="col"
       >
-      <!-- :field="col.field"
-      :header="col.header"
-      :dataType="col.dataType"
-      :headerClass="col.headerClass"
-      :class="col.bodyClass"
-      :key="col.field"
-      :sortable="true"
-      :frozen="col.frozen"
-      :hidden="col.hidden" -->
       <template v-if="col.editor" #editor="{data, field}">
         <component
           :is="col.editor.component"
@@ -163,12 +154,18 @@ defineExpose({dtable})
         />
       </template>
       <template v-if="col.bodyFunc" #body="{data, field}">
-        <slot name="bodyFunc" :col="col" :data="data" :field="field">
-          <span>{{col.bodyFunc(data[field])}}</span>
-        </slot>
+        <span>{{col.bodyFunc(data[field])}}</span>
       </template>
       <template v-else-if="col.spanWrap" #body="{data, field}">
         <span>{{data[field]}}</span>
+      </template>
+      <template v-else-if="col.component" #body="{data, field}">
+        <component
+          :is="col.component.component"
+          v-bind="col.component.args"
+          :id="data.id"
+          :key="field + '-' + data.id"
+        />
       </template>
     </Column>
     <!-- Expansion column is WRONG; shows button but click doesn't trigger anything -->
@@ -303,5 +300,17 @@ defineExpose({dtable})
 }
 :deep(.edit-width-75 > .p-inputtext) {
   width: 50%;
+}
+:deep(.edit-width-90.p-inputnumber) {
+  width: 90%;
+}
+:deep(.edit-width-90 > .p-inputtext) {
+  width: 90%;
+}
+:deep(.edit-width-95.p-inputnumber) {
+  width: 95%;
+}
+:deep(.edit-width-95 > .p-inputtext) {
+  width: 95%;
 }
 </style>

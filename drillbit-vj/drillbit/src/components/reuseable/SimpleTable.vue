@@ -38,8 +38,11 @@ const dtable = ref(null) // used to access Datatable component refs
       :key="col.field"
     >
       <template v-if="col.bodyFunc" #body="{data, field}">
+          <span>{{col.bodyFunc(data[field])}}</span>
+      </template>
+      <template v-if="col.bodyFuncWithDataAccess" #body="{data, field}">
         <slot name="bodyFunc" :col="col" :data="data" :field="field">
-          <span>{{col.bodyFunc(data, field)}}</span>
+          <span>{{col.bodyFuncWithDataAccess(data, field)}}</span>
         </slot>
       </template>
       <template v-else-if="col.spanWrap" #body="{data, field}">

@@ -13,7 +13,7 @@ router.register('summary', views.ProjectStatementSummaryViewSet, basename='proje
 router.register('projects', views.ProjectsViewSet, basename='projects')
 
 urlpatterns = [
-    path('tasks/<str:task_id>', views.get_progress, name='task-status')
+    path('tasks/<str:task_id>/', views.get_progress, name='task-status')
 ]
 
 urlpatterns += router.urls
