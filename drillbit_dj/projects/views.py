@@ -29,7 +29,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
 
     def update(self, request, *args, **kwargs):
-        # want to return updated data; the original serializer will not do that     
+        # want to return updated data; the original serializer will not do that   
+        print ('are we in here??????')  
         super().update(request, *args, **kwargs)
         updated_instance = self.get_object()
         updated_serializer = self.get_serializer(updated_instance)
@@ -233,7 +234,7 @@ class ProjectStatementSummaryViewSet(viewsets.ModelViewSet):
 
 class ProjectsViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectsSerializer
-    queryset = Projects.objects.all()
+    queryset = Projects.objects.all()    
 
 def get_progress(request, task_id):
     result = AsyncResult(task_id)

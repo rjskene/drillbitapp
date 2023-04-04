@@ -71,6 +71,30 @@ class Client {
     let res = await this.client.get('/products/weather-stations/regions/')
     return res
   }
+  async getWeatherDataTypes(params) {
+    let res = await this.client.get('/products/weather-data/get-types/', {params})
+    return res
+  }
+  async getWeatherDataVariables(params) {
+    let res = await this.client.get('/products/weather-data/get-variables/', {params})
+    return res
+  }
+  async getWeatherDataPeriods(params) {
+    let res = await this.client.get('/products/weather-data/get-periods/', {params})
+    return res
+  }
+  async stationDryBulbSimulation(params) {
+    let res = await this.client.post('/products/weather-data/dry-bulb-simulation/', params)
+    return res
+  }
+  async getRejectionTemperatureImpact(params) {
+    let res = await this.client.post('/products/heat-rejection/temperature-impact/', params)
+    return res
+  }
+  async getRejectionTemperaturePayback(params) {
+    let res = await this.client.post('/products/heat-rejection/temperature-payback/', params)
+    return res
+  }
 }
 
 const client = new Client()

@@ -13,6 +13,8 @@ import {
   useEnvironmentStore,
   useProjectsStore,
   useCurrentStateStore,
+  useWeatherStationStore,
+  useWeatherDataStore,
   } from './stores/modules'
 
 const rigStore = useRigStore()
@@ -29,6 +31,8 @@ const projectsStore = useProjectsStore()
 projectsStore.getObjects()
 const stateStore = useCurrentStateStore()
 stateStore.getObjects()
+const stationStore = useWeatherStationStore()
+stationStore.getRegions()
 
 </script>
 

@@ -58,7 +58,7 @@ const columns = computed(() => {
       dataType: 'numeric',
       headerClass: 'table-header-center min-col-width-2dot5 max-col-width-7',
       class: 'table-body-center min-col-width-2dot5 max-col-width-7',
-      bodyFunc: format.power,
+      bodyFunc: (data, field) => format.power(data[field]),
       editor: {
         component: InputNumber,
         args: {
@@ -99,7 +99,7 @@ const columns = computed(() => {
       header: 'Price',
       headerClass: 'table-header-center max-col-width-7',
       class: 'table-body-right min-col-width-2dot5 padding-right-1 max-col-width-7',
-      bodyFunc: format.currency,
+      bodyFunc: (data, field) => format.currency(data[field]),
       editor: {
         component: InputNumber,
         args: {
@@ -135,7 +135,7 @@ const columns = computed(() => {
       header: 'Design Dry Bulb',
       headerClass: 'table-header-center max-col-width-7',
       class: 'table-body-center min-col-width-2dot5 max-col-width-7',
-      bodyFunc: format.temperature,
+      bodyFunc: (data, field) => format.temperature(data[field]),
       editor: {
         component: InputNumber,
         args: {
@@ -198,7 +198,7 @@ watch(currentTab, (currentTab, oldVal) => {
 </script>
   
 <template>
-  <v-card class="ma-12" min-height="1200px">
+  <v-card class="mx-10 my-5" min-height="1200px">
     <v-tabs
       v-model="currentTab"
       bg-color="background"

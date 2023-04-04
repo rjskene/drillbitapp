@@ -1,76 +1,101 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { useAsyncState, useAsyncQueue, useStorage } from '@vueuse/core'
 
-import StatefulBtn from '@/components/reuseable/StatefulBtn.vue'
-import ScatterPlusLineChart from '@/components/reuseable/ScatterPlusLineChart.vue'
+const value = ref(22222)
 
-import client from '@/services/client'
-
-import { 
-  useProjectStore, useProjectsStore, useEnvironmentStore, useSimulationStore, useStatementStore,
-  useCurveStore,
-} 
-  from '@/stores/modules'
-const projectStore = useProjectStore()
-const projectsStore = useProjectsStore()
-const envStore = useEnvironmentStore()
-const simStore = useSimulationStore()
-const statStore = useStatementStore()
-
-const curveStore = useCurveStore()
-
-const xLabel = 'Ambient Temp (F)'
-const yLabel = 'Capacity (W)'
-const generateLine = (slope, intercept) => {
-  return (xValues) => {
-    return xValues.map((x) => {
-      console.log(x)
-      return slope * x + intercept
-    })
+const humanFormat = (number) => {
+  if (isNaN(number)) {
+    number = ""
+  } else {
+    // number = Number(number).toLocaleString(this.options.locale, {maximumFractionDigits: 2, minimumFractionDigits: 2, style: 'currency', currency: 'BRL'});
+    number = Number(number).toLocaleString('en-US', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2
+    });
   }
+  console.log(number)
+  return number
 }
-const xValues = computed(() => {
-  return curveStore.object ? curveStore.object.curve.raw[xLabel] : []
-})
-const lineYValues = computed(() => {
-  return curveStore.object ? generateLine(curveStore.object.curve.a, curveStore.object.curve.b)(xValues.value) : []
-})
-const scatterValues = computed(() => {
-  let result = []
-  if (curveStore.object) {
-    let obj = curveStore.object.curve.raw
-    for (let i = 0; i < obj[xLabel].length; i++) {
-      result.push({
-        x: obj[xLabel][i],
-        y: obj[yLabel][i],
-      })
+const isInteger = (value) => {
+  let result = false;
+  if (Number.isInteger(parseInt(value))) {
+    result = true;
+  }
+  return result;
+}
+const cleanNumber = (value) => {
+  let result = "";
+  if (value) {
+    let flag = false;
+    let arrayValue = value.toString().split("");
+    for (var i = 0; i < arrayValue.length; i++) {
+      if (isInteger(arrayValue[i])) {
+        if (!flag) {
+          // Retirar zeros à esquerda
+          if (arrayValue[i] !== "0") {
+            result = result + arrayValue[i];
+            flag = true;
+          }
+        } else {
+          result = result + arrayValue[i];
+        }
+      }
     }
   }
   return result
+}
+const valueWhenIsEmpty = ref("")
+const machineFormat = (number) => {
+  if (number) {
+    number = cleanNumber(number);
+    // Ajustar quantidade de zeros à esquerda
+    number = number.padStart(parseInt(options.precision) + 1, "0");
+    // Incluir ponto na casa correta, conforme a precisão configurada
+    number =
+      number.substring(
+        0,
+        number.length - parseInt(options.precision)
+      ) +
+      "." +
+      number.substring(
+        number.length - parseInt(options.precision),
+        number.length
+      );
+    if (isNaN(number)) {
+      number = valueWhenIsEmpty;
+    }
+  } else {
+    number = valueWhenIsEmpty;
+  }
+  if (options.precision === 0) {
+    number = cleanNumber(number);
+  }
+  return number;
+}
+const cmpValue = computed({
+  get: function() {
+    console.log(value.value, value.value !== null && value.value !== "", humanFormat(value))
+    return value.value !== null && value.value !== ""
+      ? humanFormat(value.value.toString())
+      : valueWhenIsEmpty;
+  },
+  set: function(newValue) {
+    value.value = newValue
+    // $emit("input", this.machineFormat(newValue));
+  }
 })
 
 </script>
 
 <template>
-<v-btn
-  @click="curveStore.getObject({pk: 2})"
-></v-btn>
-
-{{ curveStore.object }}
-{{ xValues  }}
-
-<ScatterPlusLineChart
-  v-if="curveStore.object"
-  lineLabel="Regression"
-  scatterLabel="Data"
-  :labels="xValues"
-  :lineYValues="lineYValues"
-  :scatterValues="scatterValues"
-  yTickFormat="power"
-  :xLabel="xLabel"
-  :yLabel="yLabel.split(' ')[0]"
-/>
+  <v-text-field
+    v-model="cmpValue"
+    prefix="$"
+  />
+    human {{ humanFormat(value) }}
+    clean {{ cleanNumber(value) }}
+    {{ value }}
+    {{ cmpValue }}
 </template>
 
   

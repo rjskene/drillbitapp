@@ -30,6 +30,10 @@ const props = defineProps({
     type: String,
     default: 'mdi-alert-circle-outline',
   },
+  iconProps: {
+    type: Object,
+    default: {}
+  }
 })
 
 const state = ref(null)
@@ -103,7 +107,7 @@ watch(state, (state, oldState) => {
       <v-slide-x-transition :hide-on-leave="true">
         <v-icon v-if="error" color="red">{{props.errorIcon}}</v-icon>
         <v-icon v-else-if="success" color="green">{{ props.successIcon }}</v-icon>
-        <v-icon v-else>{{props.icon}}</v-icon>
+        <v-icon v-else v-bind="iconProps">{{props.icon}}</v-icon>
       </v-slide-x-transition>
     </slot>
   </v-btn>  

@@ -7,21 +7,20 @@ import MainWindow from '../MainWindow.vue'
 import ProjectForm from './ProjectForm.vue'
 
 import { 
- useProjectStore, useEnvironmentStore, useProjectsStore,
+ useProjectStore, useProjectsStore,
 } from '@/stores/modules'
 import { useFormHelpers } from '@/services/composables'
 
 const projectStore = useProjectStore()
 const projectsStore = useProjectsStore()
-const environmentStore = useEnvironmentStore()
 const formHelpers = useFormHelpers()
 
 const { projects } = storeToRefs(projectStore)
-const { environment } = storeToRefs(environmentStore)
 
 const activeIndex = ref(0)
 
 const load = async (params) => {
+  console.log('load', params)
   if ((typeof params === 'string' || params instanceof String))
     projectsStore.$patch((state) => {
       state.object = {name: params}
@@ -57,7 +56,7 @@ const copy = (project) => {
           icon="mdi-content-save"
           size="small"
         />
-        </template>
+      </template>
       </v-combobox>
       <v-list-item
         @click="activeIndex = -1"
@@ -98,8 +97,8 @@ const copy = (project) => {
     </template>
     <template #main-panel>
       <ProjectForm
-          v-if="activeIndex === -1"
-        />
+        v-if="activeIndex === -1"
+      />
       <ProjectForm
         v-else
         :project="projects[activeIndex]"

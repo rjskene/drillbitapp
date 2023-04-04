@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, toRefs } from 'vue'
 
-import PlaceholderChart from '../../reuseable/PlaceholderChart.vue'
-import Chart from '../../reuseable/Chart.vue'
+import Skeleton from 'primevue/skeleton'
+import PlaceholderChart from '../../reuseable/charts/PlaceholderChart.vue'
+import BaseChart from '../../reuseable/charts/BaseChart.vue'
 
 import { useEnvironmentStore } from '@/stores/modules'
 import { every_nth } from '../../../services/composables'
@@ -14,7 +15,16 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  environment: {
+    type: Object,
+    default: null,
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
 })
+const { elements, loading } = toRefs(props)
 
 const reshape1dArrayTo2dArray = (array, columns) => {
   const rows = Math.ceil(array.length / columns)
@@ -24,31 +34,89 @@ const reshape1dArrayTo2dArray = (array, columns) => {
   }
   return newArray
 }
+
+const updateChartArgs = (element) => {
+  let data = element.store.object?.data
+  data = every_nth(data, 1000)
+  let labels = []
+  data.forEach((object) => {
+    labels.push(new Date(object['period'] + ':00'))}
+  )
+  let datasets = [{
+    label: element.text,
+    data: data.map((object) => {
+      let value = object[element.dataKey]
+      if (element.text === 'Network Hash Rate') {
+        value = value * 10**18 // hack to handle network hash rate b/c number is too big for calculation; see project.serializers line 442 for offsetting hack in backend
+      }
+      return value
+    })
+  }]
+  return {
+    labels,
+    datasets,
+    title: element.text,
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false},
+      }
+    },
+    xScaleOptions: {
+      type: 'time',
+      time: {
+        unit: 'year',
+        displayFormats: {
+          quarter: 'YYYY'
+        },
+      }
+    },
+    yTickFormat: element.chartOptions.yTickFormat,
+    yTickFormatOptions: element.chartOptions.yTickFormatOptions,
+  }
+}
+const chartArgs = computed(() => {
+  let chartArgs = {}
+  elements.value.forEach((element) => {
+    if (element.store.object?.data) {
+      chartArgs[element.text] = updateChartArgs(element)
+    }
+  })
+  return chartArgs
+})
+
 </script>
   
   
 <template>
-  <v-row 
-    v-for="(row, i) in reshape1dArrayTo2dArray(elements, 2)" 
-    :key="'row-' + i"
-    class="d-flex justify-space-evenly h-100 my-3"
-  >
-    <v-col 
-      v-for="element in row" :key="element.text"
-      class="ma-0 ml-1 pa-0"
+  <v-container>
+    <v-row
+      v-for="row in reshape1dArrayTo2dArray(elements, 2)"
+      class="d-flex justify-space-around h-100"
     >
-      <PlaceholderChart v-if="!element.store.object?.data"></PlaceholderChart>
-      <Chart 
-        v-else-if="element.store.object?.data"
-        :data="every_nth(element.store.object.data, 1000)"
-        :label="element.text"
-        x-label="period"
-        :x-tick-prefix="element.xTickPrefix"
-        :x-tick-suffix="element.xTickSuffix"
-        :y-label="element.yLabel"
-      />
-    </v-col>
-  </v-row>
+      <v-col
+        v-for="element in row" :key="element.text"
+        cols="6"
+        class="h-100 ma-0"
+      >
+        <div 
+          style="min-height: 300px"
+          class="d-flex justify-center align-center"
+        >
+          <v-progress-circular
+            v-if="loading && !element.store.object?.data"
+            indeterminate
+            color="secondary"
+          />
+          <PlaceholderChart v-else-if="!loading && !element.store.object?.data"></PlaceholderChart>
+          <BaseChart
+            v-else-if="chartArgs[element.text]"
+            v-bind="chartArgs[element.text]"
+          />
+        </div>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
   
   

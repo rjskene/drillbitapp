@@ -4,7 +4,7 @@ import { toRefs, computed } from 'vue'
 
 import { Line } from 'vue-chartjs'
 import vuetify from '@/services/vuetify'
-import { useFormatHelpers, hexToRGB } from '../../services/composables'
+import { useFormatHelpers, hexToRGB } from '../../../services/composables'
 
 const format = useFormatHelpers()
 
@@ -52,10 +52,29 @@ const props = defineProps({
   height: {
     type: Number,
     default: 900
-  }
+  },
+  yTickFormat: {
+    type: String,
+    default: null,
+  },
+  yTickFormatOptions: {
+    type: Object,
+    default: {},
+  },
+  yTickPrefix: {
+    type: String,
+    default: '',
+  },
+  yTickSuffix: {
+    type: String,
+    default: '',
+  },
 })
 
-const { data, xAxisUnit, title, legend, xLabel, yLabel } = toRefs(props)
+const { 
+  data, xAxisUnit, title, legend, xLabel, 
+  yLabel, yTickFormat, yTickPrefix, yTickSuffix, yTickFormatOptions
+} = toRefs(props)
 
 const labels = computed(() => {
   let labels = []
@@ -77,7 +96,7 @@ const chartData = computed(() => {
 const chartOptions = computed(() => {
   return {
     responsive: true,
-    // maintainAspectRatio: false,
+    maintainAspectRatio: false,
     elements: {
       point: {
         radius: 0
@@ -118,7 +137,13 @@ const chartOptions = computed(() => {
           display: false,
         },
         ticks: { 
-          callback: (value, index, ticks) => props.xTickPrefix + format.number(value) + props.xTickSuffix,
+          callback: (value, index, ticks) => {
+          if (yTickFormat.value) {
+            return format[yTickFormat.value](value, yTickFormatOptions.value)
+          }
+          else
+            return yTickPrefix.value + format.number(value) + yTickSuffix.value
+        },
         }
       }
     }

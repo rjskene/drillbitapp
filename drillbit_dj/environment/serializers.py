@@ -152,7 +152,7 @@ class HashRateSerializer(
 
     def to_schedule(self):
         return pd.DataFrame(self.data['data'])
-
+    
 class EnvironmentSerializer(serializers.ModelSerializer):
     block_schedule = serializers.PrimaryKeyRelatedField(queryset=BlockSchedule.objects.all())
     bitcoin_price = serializers.PrimaryKeyRelatedField(queryset=BitcoinPrice.objects.all())

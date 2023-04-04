@@ -102,12 +102,7 @@ watchEffect(() => {
       </div>
     </template>
     <template #main-panel>
-      <div 
-        v-if="activeIndex === -1"
-        class="d-flex justify-center"
-      >
-        <CompWindow></CompWindow>
-      </div>
+        <CompWindow/>
     </template>
   </MainWindow>
 </template>

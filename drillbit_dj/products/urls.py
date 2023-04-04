@@ -14,7 +14,8 @@ router.register('weather-data', views.WeatherDataViewSet, basename='weather-data
 
 urlpatterns = [
     path('weather-stations/regions/', views.get_weather_station_regions, name='weather-station-regions'),
-    # path('weather-data/<str:type>/<str:variable>/<str:station_id>', views.get_progress, name='task-status'),
+    path('heat-rejection/temperature-impact/', views.RejectionTemperatureImpactView.as_view(), name='heat-rejection-temperature-impact'),
+    path('heat-rejection/temperature-payback/', views.RejectionTemperaturePaybackView.as_view(), name='heat-rejection-temperature-payback'),
 ]
 
 urlpatterns += router.urls

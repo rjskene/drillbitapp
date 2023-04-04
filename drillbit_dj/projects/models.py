@@ -6,14 +6,14 @@ from drillbit.__new_objects import RigOperator, CoolingOperator, HeatRejectionOp
     ElectricalOperator, Project as ProjectManager
 
 from drillbit_dj.project import ProjectModel
-from products.models import Rig, Cooling, HeatRejection, Electrical
+from products.models import Rig, Cooling, HeatRejection, Electrical, WeatherStation
 from environment.models import Environment
-
 
 class RigForProject(ProjectModel):
     project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='rigs')
     rig = models.ForeignKey(Rig, on_delete=models.PROTECT)
     quantity = models.FloatField('Quantity', null=True)
+    price = models.FloatField('Price', null=True)
     amortization = models.FloatField('Amortization', default=60)
 
     def as_drillbit_object(self):
@@ -26,6 +26,7 @@ class RigForProject(ProjectModel):
 class InfraForProject(ProjectModel):
     project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='infrastructure')
     quantity = models.FloatField('Quantity', null=True)
+    price = models.FloatField('Price', null=True)
     amortization = models.FloatField('Amortization', default=60)
 
     infra_content_type = models.ForeignKey(
@@ -45,24 +46,33 @@ class InfraForProject(ProjectModel):
             return CoolingOperator(
                 product=self.infrastructure.as_drillbit_object(),
                 quantity=self.quantity,
+                price=self.price,
             )
         elif isinstance(self.infrastructure, HeatRejection):
             return HeatRejectionOperator(
                 product=self.infrastructure.as_drillbit_object(),
                 quantity=self.quantity,
+                price=self.price,
             )
         elif isinstance(self.infrastructure, Electrical):
             return ElectricalOperator(
                 product=self.infrastructure.as_drillbit_object(),
                 quantity=self.quantity,
+                price=self.price,
             )
 
 class Project(ProjectModel):
     name = models.CharField('Name', max_length=100)
     description = models.TextField('Description', blank=True, null=True)
-    
     capacity = models.FloatField('Capacity')
-    target_ambient_temp = models.FloatField('Target Ambient Temperature', default=95)
+
+    ambient_temp_source = models.ForeignKey(
+        WeatherStation, 
+        on_delete=models.PROTECT,
+        related_name='projects',
+        null=True,
+    )
+    target_ambient_temp = models.JSONField('Target Ambient Temperature', default=dict, null=True)
     target_overclocking = models.FloatField('Target Overclock Factor', default=1)
     energy_price = models.FloatField('Energy Price')
 
@@ -71,11 +81,12 @@ class Project(ProjectModel):
     opex = models.FloatField('Opex', default=0)
     property_taxes = models.FloatField('Property Taxes', default=0)
 
-    def add_rig(self, rig, quantity=None, *args, **kwargs):
+    def add_rig(self, rig, quantity=None, price=None, *args, **kwargs):
         return RigForProject.objects.create(
             project=self,
             rig=rig,
             quantity=quantity,
+            price=price,
         )
 
     def add_infra(self, 
@@ -83,6 +94,7 @@ class Project(ProjectModel):
         infra_content_type:ContentType=None,
         infra_object_id:int=None, 
         quantity=None,
+        price=None,
         *args,
         **kwargs
         ):
@@ -102,13 +114,20 @@ class Project(ProjectModel):
             infra_content_type=infra_content_type,
             infra_object_id=infra_object_id,
             quantity=quantity,
+            price=price,
         )
 
-    def as_drillbit_object(self):
+    def as_drillbit_object(self, target_ambient_temp=None):
+        """
+        Allow outside target_ambient_temp to be passed in, if the
+        target_ambient_temp is being manipulated outside of the model
+        """
+        target_ambient_temp = target_ambient_temp or self.target_ambient_temp
+
         return ProjectManager(
             name=self.name,
             capacity=self.capacity,
-            target_ambient_temp=self.target_ambient_temp,
+            target_ambient_temp=target_ambient_temp,
             target_overclocking=self.target_overclocking,
             energy_price=self.energy_price,
             rigs=[rig.as_drillbit_object() for rig in self.rigs.all()][0], # only use first rig for now

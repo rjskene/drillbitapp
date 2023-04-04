@@ -25,7 +25,7 @@ const columns = computed(() => {
   {
     field: 'make',
     header: 'Make', 
-    headerClass: 'table-header-center',
+    headerClass: 'table-header-center min-col-width-7dot5',
     bodyClass: 'table-body-center min-col-width-7dot5',
     editor: {
       component: InputText,
@@ -43,7 +43,7 @@ const columns = computed(() => {
   {
     field: 'model',
     header: 'Model',
-    headerClass: 'table-header-center',
+    headerClass: 'table-header-center min-col-width-7dot5',
     bodyClass: 'table-body-center min-col-width-7dot5',
     editor: {
       component: InputText,
@@ -61,7 +61,7 @@ const columns = computed(() => {
   {
     field: 'generation',
     header: 'Generation',
-    headerClass: 'table-header-center',
+    headerClass: 'table-header-center min-col-width-7dot5',
     bodyClass: 'table-body-center min-col-width-7dot5',
     editor: {
       component: InputText,
@@ -70,7 +70,7 @@ const columns = computed(() => {
   {
     field: 'manufacturer',
     header: 'Manufacturer',
-    headerClass: 'table-header-center',
+    headerClass: 'table-header-center min-col-width-10',
     bodyClass: 'table-body-center min-col-width-10',
     editor: {
       component: InputText,
@@ -88,9 +88,9 @@ const columns = computed(() => {
   {
     field: 'hash_rate',
     header: 'Hash Rate',
-    headerClass: 'table-header-center',
+    headerClass: 'table-header-center min-col-width-7dot5',
     bodyClass: 'table-body-center min-col-width-7dot5',
-    bodyFunc: format.hashRate,
+    bodyFunc: (data, field) => format.hashRate(data[field]),
     editor: {
       component: InputNumber,
       args: {
@@ -103,7 +103,7 @@ const columns = computed(() => {
     header: 'Power',
     headerClass: 'table-header-center',
     bodyClass: 'table-body-center min-col-width-7dot5',
-    bodyFunc: format.power,
+    bodyFunc: (data, field) => format.power(data[field]),
     editor: {
       component: InputNumber,
       args: {
@@ -116,7 +116,7 @@ const columns = computed(() => {
     header: 'Buffer',
     headerClass: 'table-header-center',
     bodyClass: 'table-body-center min-col-width-2dot5',
-    bodyFunc: format.percentage,
+    bodyFunc: (data, field) => format.percentage(data[field]),
     editor: {
       component: InputNumber,
       args: {
@@ -127,9 +127,9 @@ const columns = computed(() => {
   {
     field: 'price',
     header: 'Price',
-    headerClass: 'table-header-center',
+    headerClass: 'table-header-center pl-12',
     bodyClass: 'table-body-right min-col-width-2dot5 padding-right-1',
-    bodyFunc: format.currency,
+    bodyFunc: (data, field) => format.currency(data[field]),
     editor: {
       component: InputNumber,
       args: {

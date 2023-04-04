@@ -13,6 +13,7 @@
     if (key === 'Price') return formatHelpers.currency(value)
     if (key === 'Reward') return formatHelpers.BTC(value)
     if (key === 'Difficulty') return formatHelpers.T(value)
+    if (key === 'Network Hash Rate') return formatHelpers.hashRate(value, {toFixed: 2})
 
     return value
   }

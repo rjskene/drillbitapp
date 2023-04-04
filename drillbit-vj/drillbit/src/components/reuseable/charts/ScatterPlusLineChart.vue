@@ -4,7 +4,7 @@ import { toRefs, computed } from 'vue'
 
 import { Scatter } from 'vue-chartjs'
 import vuetify from '@/services/vuetify'
-import { useFormatHelpers, hexToRGB } from '../../services/composables'
+import { useFormatHelpers, hexToRGB } from '../../../services/composables'
 
 const format = useFormatHelpers()
 

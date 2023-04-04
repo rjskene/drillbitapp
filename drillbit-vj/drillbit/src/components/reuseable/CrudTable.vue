@@ -125,8 +125,8 @@ defineExpose({dtable})
     v-model:filters="filters"
     v-model:editingRows="editingRows"
     :scrollable="true"
-    :showFilterMatchModes="true"
     :scrollDirection="props.scrollDirection"
+    :showFilterMatchModes="true"
     sortMode="multiple"
     removableSort
     class="p-datatable-sm mt-3"
@@ -154,7 +154,7 @@ defineExpose({dtable})
         />
       </template>
       <template v-if="col.bodyFunc" #body="{data, field}">
-        <span>{{col.bodyFunc(data[field])}}</span>
+        <span>{{col.bodyFunc(data, field)}}</span>
       </template>
       <template v-else-if="col.spanWrap" #body="{data, field}">
         <span>{{data[field]}}</span>

@@ -1,9 +1,8 @@
 <script setup>
-import { ref, computed, toRefs, defineExpose } from 'vue'
+import { ref, computed, toRefs, defineExpose, watch } from 'vue'
 
-import Chart from '../../reuseable/Chart.vue'
-import PlaceholderChart from '../../reuseable/PlaceholderChart.vue'
-import Skeleton from 'primevue/skeleton'
+import BaseChart from '../../reuseable/charts/BaseChart.vue'
+import PlaceholderChart from '../../reuseable/charts/PlaceholderChart.vue'
 
 import { every_nth } from '../../../services/composables'
 
@@ -18,35 +17,78 @@ const props = defineProps({
     required: true
   }
 })
-const { createState, activeElement } = toRefs(props)
-const activeStore = computed(() => {
-  return activeElement.value.store
-})
 
+// Form Details
 const form = ref(null)
 const valid = computed(() => {
   return form.value.errors.length === 0
 })
-const titleArgs = computed(() => {
-  return {
-    display: true,
-      text: activeElement.value.text,
-      color: '#ffffffde',
-      font: {
-        size: 16,
-        weight: 'normal'
-      }
-  }
-})
+
 defineExpose({
   valid
 })
-</script>
+
+// Chart Data and Formatting
+const { createState, activeElement } = toRefs(props)
+const activeStore = computed(() => {
+  return activeElement.value.store
+})
+const data = computed(() => {
+  return activeStore.value.object?.data
+})
+
+const chartArgs = ref(null)
+const updateChartArgs = (data) => {
+  data = every_nth(data, 1000)
+  let labels = []
+  data.forEach((object) => {
+    labels.push(new Date(object['period'] + ':00'))}
+  )
   
+  let datasets = [{
+    label: activeElement.value?.text,
+    data: data.map((object) => {
+      let value = object[activeElement.value?.dataKey]
+      if (activeElement.value?.text === 'Network Hash Rate') {
+        value = value * 10**18 // hack to handle network hash rate b/c number is too big for calculation; see project.serializers line 442 for offsetting hack in backend
+      }
+      return value
+    })
+  }]
+  chartArgs.value = {
+    labels,
+    datasets,
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },    
+      },
+    },
+    xScaleOptions: {
+      type: 'time',
+      time: {
+        unit: 'year',
+        displayFormats: {
+          quarter: 'YYYY'
+        },
+      }
+    },
+    yTickFormat: activeElement.value?.chartOptions.yTickFormat,
+    yTickFormatOptions: activeElement.value?.chartOptions.yTickFormatOptions,
+  }
+}
+
+watch(data, (data) => {
+  if (data)
+    updateChartArgs(data)
+})
+</script>
   
 <template>
   <v-row>
-    <v-col class="mx-6">
+    <v-col class="mx-6 mt-3">
       <v-form ref="form">
         <v-sheet class="d-flex justify-space-evenly">
           <v-sheet
@@ -73,18 +115,21 @@ defineExpose({
   </v-row>
   <v-row>
     <v-col class="mb-3 mx-6">
-      <Skeleton v-if="createState?.isLoading" width="95%" height="500px"></Skeleton>
-      <PlaceholderChart v-else-if="!createState?.isLoading && !activeStore.object?.data"></PlaceholderChart>
-      <Chart 
-        v-else-if="activeStore.object?.data"
-        :data="every_nth(activeStore.object.data, 1000)"
-        :label="activeElement.text"
-        x-label="period"
-        :y-label="activeElement.yLabel"
-        :x-tick-prefix="activeElement.xTickPrefix"
-        :x-tick-suffix="activeElement.xTickSuffix"
-        :title="titleArgs"
-      />
+      <div 
+        style="min-height: 550px"
+        class="d-flex justify-center align-center"
+      >
+        <v-progress-circular
+          v-if="createState?.isLoading"
+          indeterminate
+          color="secondary"
+        />
+        <PlaceholderChart v-else-if="!createState?.isLoading && !activeStore.object?.data"></PlaceholderChart>
+        <BaseChart
+          v-else-if="chartArgs"
+          v-bind="chartArgs"
+        />
+      </div>
     </v-col>
   </v-row>
 </template>

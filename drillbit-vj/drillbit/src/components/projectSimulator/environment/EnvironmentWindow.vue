@@ -1,66 +1,75 @@
 <script setup>
 import { ref, toRefs, watch, computed } from 'vue'
-import { storeToRefs } from 'pinia'
 
 import { useAsyncState } from '@vueuse/core'
 
-import Skeleton from 'primevue/skeleton'
-
 import StatefulBtn from '../../reuseable/StatefulBtn.vue'
-import CrudBar from '@/components/reuseable/CrudBar.vue'
 import MainWindow from '../MainWindow.vue'
 import EnvironmentSummary from './EnvironmentSummary.vue'
 import FactorForm from './FactorForm.vue'
-import Chart from '@/components/reuseable/Chart.vue'
-import PlaceholderChart from '../../reuseable/PlaceholderChart.vue'
 
 import { 
   useBlockScheduleStore, useBTCPriceStore, useFeeStore, useHashRateStore,
   useEnvironmentStore
 } from '@/stores/modules'
-import { every_nth, useFormHelpers } from '@/services/composables'
-
-const store = useEnvironmentStore()
+import { useFormHelpers, useFormatHelpers } from '@/services/composables'
 
 const formHelpers = useFormHelpers()
+const store = useEnvironmentStore()
 
-const summaryActive = ref(false)
-const activeIndex = ref(0)
+const activeIndex = ref(-1)
 const elements = [
-  {text: 'Block Schedule',  store: useBlockScheduleStore(), yLabel: 'reward'},
-  {text: 'BTC Price', store: useBTCPriceStore(), yLabel: 'forecast'},
-  {text: 'Transaction Fees', store: useFeeStore(), yLabel: 'forecast'},
   {
-    text: 'Network Hash Rate', 
-    store: useHashRateStore(), 
-    yLabel: 'forecast',
-    xTickPrefix: '',
-    xTickSuffix: 'M TH/s'
+    text: 'Block Schedule',  
+    store: useBlockScheduleStore(), 
+    dataKey: 'reward',
+    chartOptions: {
+      yTickFormat: 'BTC',
+    }
+  },
+  {
+    text: 'BTC Price', 
+    store: useBTCPriceStore(), 
+    dataKey: 'forecast',
+    chartOptions: {
+      yTickFormat: 'currency',
+      yTickFormatOptions: {maximumFractionDigits: 0}
+    }
+  },
+  {
+    text: 'Transaction Fees', 
+    store: useFeeStore(), 
+    dataKey: 'forecast',
+    chartOptions: {
+      yTickFormat: 'BTC',
+      yTickFormatOptions: {toFixed: 2}
+    }
+  },
+  {
+    text: 'Network Hash Rate',
+    store: useHashRateStore(),
+    dataKey: 'forecast',
+    chartOptions: {
+      yTickFormat: 'hashRate',
+    }
   }
 ]
 const activeElement = computed(() => {
   return elements[activeIndex.value]
 })
-const activeStore = computed(() => {
-  return activeElement.value.store
-})
-const activeName = computed(() => {
-  return activeStore.value.$id.replace('Store', '')
-})
 const elementName = (element) => {
   return element.store.$id.replace('Store', '')
 }
 
-const createState = ref({})
+const loadState = ref({})
 const load = (params) => {
-  if (typeof params === 'string' || params instanceof String) {
+  console.log('load', params)
+  if ((typeof params === 'string' || params instanceof String)) {
     store.$patch((state) => {
-      state.object.name = params
+      state.object = {name: params}
     })
-  } else if (!params) {
-    // pass
-  } else {
-    createState.value = useAsyncState(
+  } else if (params) {
+    loadState.value = useAsyncState(
       store.load(params),
       {},
       {
@@ -68,7 +77,15 @@ const load = (params) => {
           console.error(error.response)
         }
       }
-    )}
+    )
+    loadState.value.execute().then(() => {
+      for (let element of elements) {
+        store.$patch(() => {
+          store.locked[elementName(element)] = true
+        })
+      }
+    })
+  }
 }
 const create = (element) => {
   let state = useAsyncState(
@@ -80,7 +97,7 @@ const create = (element) => {
       }
     }
   )
-  createState.value = state
+  loadState.value = state
   return state
 }
 
@@ -91,8 +108,8 @@ const locked = (name) => {
 const lockable = (name) => {
   return store.lockable[name]
 }
-const lock = (name) => {
-  if (lockable(name) & form.value.valid) {
+const lock = (name, noFormValidation = false) => {
+  if (lockable(name) & (noFormValidation || form.value.valid )) {
     store.$patch(() => {
       store.locked[name] = true
     })
@@ -100,7 +117,7 @@ const lock = (name) => {
 }
 const lockAll = () => {
   elements.forEach((element) => {
-    lock(elementName(element))
+    lock(elementName(element), true)
   })
 }
 const unlockAll = () => {
@@ -162,64 +179,70 @@ const readyOrNot = (name) => {
         />
         </template>
       </v-combobox>
-      <v-list-item
-        @click="activeIndex = -1"
-        class="pl-3"
-      >
-        Summary
-      </v-list-item>
-      <v-list-item
-        v-for="(element, i) in elements"
-        @click="activeIndex = i"
-        :key="element.text + '-element'"
-        :value="element.value"
-        class="pl-3 pr-1"
-      >
-        {{ element.text }}
-        <template #append>
-          <v-icon
-            v-bind="readyOrNot(elementName(element))"
-            class="ml-1 mr-1 pr-0"
-            size="x-small"
-          />
-          <StatefulBtn
-            @click="create(element)"
-            variant="flat"
-            icon="mdi-content-save"
-            size="x-small"
-            :disabled="locked(elementName(element))"
-          />
-          <v-btn
-            v-if="locked(elementName(element))"
-            @click="unlock(elementName(element))"
-            icon="mdi-lock"
-            variant="flat"
-            size="x-small"
-            class="mr-0 pr-0"
-          ></v-btn>
-          <v-btn
-            v-else
-            @click="lock(elementName(element))"
-            icon="mdi-lock-open-variant"
-            variant="flat"
-            size="x-small"
-            :disabled="!lockable(elementName(element))"
-            class="mr-0 pr-0"
+      <v-list>
+        <v-list-item
+          @click="activeIndex = -1"
+          key="summary-element"
+          value="-1"
+          class="pl-3"
+        >
+          Summary
+        </v-list-item>
+        <v-list-item
+          v-for="(element, i) in elements"
+          @click="activeIndex = i"
+          :key="element.text + '-element'"
+          :value="i"
+          class="pl-3 pr-1"
+        >
+          {{ element.text }}
+          <template #append>
+            <v-icon
+              v-bind="readyOrNot(elementName(element))"
+              class="ml-1 mr-1 pr-0"
+              size="x-small"
+            />
+            <StatefulBtn
+              @click="create(element)"
+              variant="flat"
+              icon="mdi-content-save"
+              size="x-small"
+              :disabled="locked(elementName(element))"
+            />
+            <v-btn
+              v-if="locked(elementName(element))"
+              @click="unlock(elementName(element))"
+              icon="mdi-lock"
+              variant="flat"
+              size="x-small"
+              class="mr-0 pr-0"
             ></v-btn>
-        </template>
-      </v-list-item>
+            <v-btn
+              v-else
+              @click="lock(elementName(element))"
+              icon="mdi-lock-open-variant"
+              variant="flat"
+              size="x-small"
+              :disabled="!lockable(elementName(element))"
+              class="mr-0 pr-0"
+              ></v-btn>
+          </template>
+        </v-list-item>
+      </v-list>
     </template>
     <template #main-panel>
-        <EnvironmentSummary
-          v-if="activeIndex === -1"
-          :elements="elements"
-        />
-        <FactorForm
-          v-else
-          ref="form"
-          :create-state="createState"
-          :active-element="activeElement"
-        />
+      <EnvironmentSummary
+        v-if="activeIndex === -1"
+        :elements="elements"
+        :environment="store.object"
+        :loading="loadState.isLoading"
+      />
+      <FactorForm
+        v-else
+        ref="form"
+        :create-state="loadState"
+        :active-element="activeElement"
+      />
     </template>
   </MainWindow>
 </template>

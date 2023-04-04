@@ -21,23 +21,30 @@ export function hexToRGB (hex, opacity=null, asString=False) {
 export const every_nth = (arr, nth) => arr.filter((e, i) => i % nth === nth - 1)
 
 export function useFormatHelpers() {
+  const btcStr = '\u20BF'
   const percentage = (value) => {
     return (value*100).toFixed(2) + '%'
   }
-  const number = (value) => {
-    return value.toFixed(0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  const number = (value, {toFixed = 0} = {}) => {
+    if (isValidNumber(value))
+      return value.toFixed(toFixed).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+    else
+      return value
   }
   const temperature = (value) => {
-    return value.toFixed(0) + '°F'
+    if (value)
+      return value.toFixed(0) + '°F'
+    return value
   }
-  const BTC = (value) => {
-    return '\u20BF ' + value.toFixed(0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  const BTC = (value, {toFixed = 0} = {}) => {
+
+    return '\u20BF ' + value.toFixed(toFixed).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
   }
   const T = (value) => {
     return (value / 1e12).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + 'T'
   }
-  const currency = (value, style='') => {
-    let NF = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
+  const currency = (value, {style='', maximumFractionDigits = 2} = {}) => {
+    let NF = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits })
     if (style === 'M')
       value = Math.round(value/10000)/100
     if (style === 'K')
@@ -45,18 +52,18 @@ export function useFormatHelpers() {
   
     return NF.format(value) + style
   }
-  const scaler = (value, units) => {
+  const scaler = (value, units, toFixed=0) => {
     let i = 0
     while (value >= 1000) {
       value = value/1000
       i++
     }
     if (value)
-      return value.toFixed(0) + ' ' + units[i]
+      return value.toFixed(toFixed) + ' ' + units[i]
     else
       return null
   }
-  const inverseScaler = (value, units) => {
+  const inverseScaler = (value, units, toFixed=0) => {
     if (value === 0) return value
     else if (value < 0) throw new Error('Value must be positive')
     
@@ -66,36 +73,35 @@ export function useFormatHelpers() {
       i++
     }
     if (value)
-      return value.toFixed(0) + ' ' + units[i]
+      return value.toFixed(toFixed) + ' ' + units[i]
     else
       return null
   }  
-  const hashes = (value) => {
+  const hashes = (value, {toFixed = 0} = {}) => {
     let units = ['H', 'KH', 'MH', 'GH', 'TH', 'PH', 'EH', 'ZH', 'YH', 'RH']
-    return scaler(value, units)
+    return scaler(value, units, toFixed)
   }
-  const hashRate = (value) => {
+  const hashRate = (value, {toFixed = 0} = {}) => {
     let units = ['H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s', 'PH/s', 'EH/s', 'ZH/s', 'YH/s', 'RH/s']
-    return scaler(value, units)
+    return scaler(value, units, toFixed)
   }
-  const power = (value) => {
+  const power = (value, {toFixed = 0} = {}) => {
     let units = ['W', 'kW', 'MW', 'GW', 'TW', 'PW', 'EW', 'ZW', 'YW', 'RW']
-    return scaler(value, units)
+    return scaler(value, units, toFixed)
   }
-  const energy = (value) => {
+  const energy = (value, {toFixed = 0} = {}) => {
     let units = ['Wh', 'kWh', 'MWh', 'GWh', 'TWh', 'PWh', 'EWh', 'ZWh', 'YWh', 'RWh']
-    return scaler(value, units)
+    return scaler(value, units, toFixed)
   }
-  const efficiency = (value) => {
+  const efficiency = (value, {toFixed = 0} = {}) => {
     let units = ['J/H', 'J/KH', 'J/MH', 'J/GH', 'J/TH', 'J/PH', 'J/EH', 'J/ZH', 'J/YH', 'J/RH']
-    return inverseScaler(value, units)
+    return inverseScaler(value, units, toFixed)
   }
-  const hashPrice = (value) => {
-    console.log(value)
+  const hashPrice = (value, {toFixed = 0} = {}) => {
     let units = ['$/H', '$/KH', '$/MH', '$/GH', '$/TH', '$/PH', '$/EH', '$/ZH', '$/YH', '$/RH']
-    return inverseScaler(value, units)
+    return inverseScaler(value, units, toFixed)
   }
-  return { percentage, number, temperature, BTC, currency, T, hashes, hashRate, power, energy, efficiency, hashPrice }
+  return { btcStr, percentage, number, temperature, BTC, currency, T, hashes, hashRate, power, energy, efficiency, hashPrice }
 }
 
 const format = useFormatHelpers()
@@ -188,7 +194,7 @@ export function useFormHelpers() {
   const reverse = (arr) => arr.slice().reverse()
   return {
     nameRules, startDateRules, endDateRules, numberRules, percentageRules,
-    reverse
+    reverse, numberIfNotNullRules
   }
 }
 

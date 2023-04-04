@@ -1,7 +1,7 @@
 <script setup>
   import { defineProps, onMounted, onBeforeUnmount, shallowRef } from 'vue'
   import { Line } from 'vue-chartjs'
-  import sp500 from './sp500.js'
+  import sp500 from '../sp500.js'
 
   import vuetify from '@/services/vuetify'
   import { hexToRGB } from '@/services/composables'
@@ -59,6 +59,7 @@
     backgroundColor: 'rgba(0,0,0,.1)'
   }
   const baseChartOptions = {
+    maintainAspectRatio: false,
     plugins: {
       legend: {display: false},
       annotation: {

@@ -11,14 +11,14 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+  scrollPosition: {
+    type: String,
+    default: 'bottom',
+  },
 })
 const { numObjects } = toRefs(props)
 const emit = defineEmits(['update:objectsIndex'])
 const objectsIndex = useVModel(props, 'objectsIndex', emit)
-
-const scrollDots = computed(()=> {
-  return 10 > numObjects.value ? numObjects.value : 10
-})
 
 const next = () => {
   objectsIndex.value = objectsIndex.value >= numObjects.value - 1 ? 0 : objectsIndex.value + 1
@@ -34,9 +34,40 @@ const prev = () => {
       elevation="0"
       class="ma-3 pa-6 mb-0 pb-0"
     >
+    <v-card-actions v-if="props.scrollPosition === 'top'" class="justify-space-between">
+        <v-btn
+          variant="plain"
+          icon="mdi-chevron-left"
+          @click="prev"
+        ></v-btn>
+        <v-item-group
+          v-if="numObjects < 10"
+          v-model="objectsIndex"
+          class="text-center"
+          mandatory
+        >
+          <v-item
+            v-for="n in numObjects"
+            :key="`btn-${n - 1}`"
+            v-slot="{ isSelected, toggle }"
+            :value="n - 1"
+          >
+            <v-btn
+              :variant="isSelected ? 'outlined' : 'text'"
+              icon="mdi-record"
+              @click="toggle"
+            ></v-btn>
+          </v-item>
+        </v-item-group>
+        <v-btn
+          variant="plain"
+          icon="mdi-chevron-right"
+          @click="next"
+        ></v-btn>
+      </v-card-actions>
       <slot name="chart">
       </slot>
-      <v-card-actions class="justify-space-between">
+      <v-card-actions v-if="props.scrollPosition === 'bottom'" class="justify-space-between">
         <v-btn
           variant="plain"
           icon="mdi-chevron-left"

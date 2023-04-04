@@ -5,7 +5,7 @@ import DryBulbScaler from '../components/DryBulbScaler.vue'
   
 <template>
   <v-card 
-    class="ma-10 pa-0 rounded-xl" 
+    class="mx-10 my-5 pa-0 rounded-xl" 
     min-height="1200px"
     color="background"
   >

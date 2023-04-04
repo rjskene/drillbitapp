@@ -59,10 +59,6 @@ class HashRateViewSet(EnvironmentViewSetMixin, viewsets.ModelViewSet):
     queryset = HashRate.objects.all()
     model = HashRate
 
-    def create(self, request, *args, **kwargs):     
-        assert not isinstance(request.data, list), 'Bulk create not supported'
-        return self._finish_create(request.data)
-
 class EnvironmentViewSet(viewsets.ModelViewSet):
     serializer_class = EnvironmentSerializer
     queryset = Environment.objects.all()

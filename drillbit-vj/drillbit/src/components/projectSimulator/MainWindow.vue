@@ -15,8 +15,9 @@
         </v-sheet>
       </v-col>
       <v-col cols="8" class="ma-0 pa-0 ml-12">
-        <v-card elevation="0" 
+        <v-card 
           class="ma-0 pa-0 pt-3 h-100 rounded-xl"
+          min-height="680px"
           color="surface"
         >
           <slot name="main-panel"></slot>

@@ -186,3 +186,20 @@ class WeatherData(ProjectModel):
 #             variable='Dry-Bulb'
 #         )
 #         datas.append(data)
+
+# from products.models import WeatherData
+# fpath = '/Users/spindicate/Documents/programming/weather-stations/hourly_temp_by_month/'
+
+# datas = []
+# for fname in tqdm(os.listdir(fpath)):
+#     if not '.DS_Store' in fname:
+#         df = pd.read_csv(fpath + fname, skiprows=8)
+#         data = WeatherData(
+#             station=WeatherStation.objects.get(id=fname.split('_')[0]),
+#             data=df.to_dict('list'),
+#             type='diurnal',
+#             units='IP',
+#             period=fname.split('_')[1],
+#             variable='Dry-Bulb'
+#         )
+#         datas.append(data)

@@ -18,9 +18,10 @@
   
 <template>
   <v-card 
-    class="ma-10 pa-0 rounded-xl" 
-    min-height="1200px"
+    class="mx-10 my-5 pa-0 rounded-xl" 
+    min-height="800px"
     color="background"
+    flat
   >
     <v-tabs
       v-model="currentTab"
@@ -37,7 +38,7 @@
 
     <v-window
       v-model="currentTab"
-      class="mt-6"
+      class="mt-3"
       >
         <v-window-item
           v-for="tab in tabs"

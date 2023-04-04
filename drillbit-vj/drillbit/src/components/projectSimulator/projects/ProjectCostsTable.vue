@@ -28,21 +28,21 @@ const columns = computed(() => {
     header: 'Price',
     headerClass: 'table-header-center',
     bodyClass: 'table-body-center min-col-width-7dot5',
-    bodyFunc: format.currency,
+    bodyFunc: (data, field) => format.currency(data[field]),
   },
   {
     field: 'quantity',
     header: 'Quantity',
     headerClass: 'table-header-center',
     bodyClass: 'table-body-center min-col-width-7dot5',
-    bodyFunc: format.number,
+    bodyFunc: (data, field) => format.number(data[field]),
   },
   {
     field: 'total_cost',
     header: 'Cost',
     headerClass: 'table-header-center',
     bodyClass: 'table-body-center min-col-width-10',
-    bodyFunc: format.currency,
+    bodyFunc: (data, field) => format.currency(data[field]),
   },
 ]
   let table = new TableMaker(cols)

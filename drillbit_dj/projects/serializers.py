@@ -17,7 +17,7 @@ from .models import RigForProject, InfraForProject, Project, Projects, \
 from environment.models import Environment
 from environment.serializers import BlockScheduleSerializer, BitcoinPriceSerializer, \
     TransactionFeesSerializer, HashRateSerializer, BitcoinUtilityInitMixin
-from products.models import Rig, Cooling, HeatRejection, Electrical, RejectionCurve
+from products.models import Rig, Cooling, HeatRejection, Electrical, WeatherStation
 from products.serializers import RigSerializer, CoolingSerializer, HeatRejectionSerializer, ElectricalSerializer
 
 class StatementFromJSONConversionField(serializers.JSONField):
@@ -45,6 +45,7 @@ class RigForProjectSerializer(serializers.ModelSerializer):
             'id', 
             'project',
             'quantity',
+            'price',
             'amortization',
             'rig', 
             'rig_id'
@@ -81,6 +82,7 @@ class InfraForProjectSerializer(serializers.ModelSerializer):
             'id', 
             'project',
             'quantity',
+            'price',
             'amortization',
             'infrastructure',
             'infra_content_type', 
@@ -93,13 +95,25 @@ class ProjectSerializer(serializers.ModelSerializer):
     rigs = RigForProjectSerializer(many=True, required=False)
     infrastructure = InfraForProjectSerializer(many=True, required=False)
 
+    ambient_temp_source = serializers.PrimaryKeyRelatedField(
+        queryset=WeatherStation.objects.all(), allow_null=True
+    )
+    ambient_temp_source_name = serializers.SerializerMethodField()
+    target_ambient_temp = serializers.JSONField(allow_null=True)
+    
+    # Allows rig and infrastructure quantity to be scaled automatically using the ProjectManager `scale` method
+    __auto_scale__ = serializers.BooleanField(default=False)
+
     class Meta:
         model = Project
         fields = (
             'id',
-            'name', 'description',
+            'name', 
+            'description',
             'capacity', 
             'energy_price',
+            'ambient_temp_source',
+            'ambient_temp_source_name',
             'target_ambient_temp',
             'target_overclocking',
             'pool_fees',
@@ -107,15 +121,20 @@ class ProjectSerializer(serializers.ModelSerializer):
             'opex',
             'property_taxes',
             'rigs', 
-            'infrastructure'
+            'infrastructure',
+            '__auto_scale__',
         )
         list_serializer_class = ProjectListSerializer
 
+    def get_ambient_temp_source_name(self, obj):
+        return obj.ambient_temp_source.location if obj.ambient_temp_source else None
+
     def create(self, validated_data):
+        auto_scale = validated_data.pop('__auto_scale__', False)
         rigs_data = validated_data.pop('rigs', [])
         infrastructure_data = validated_data.pop('infrastructure', [])
+
         project = Project.objects.create(**validated_data)
-        
         for rig_data in rigs_data:
             rig_data['rig'] = rig_data.pop('rig_id')
             project.add_rig(**rig_data)
@@ -123,9 +142,13 @@ class ProjectSerializer(serializers.ModelSerializer):
         for infra_data in infrastructure_data:
             project.add_infra(**infra_data)
 
+        if auto_scale:
+            scale_project_object(project)
+
         return project
 
     def update(self, project, validated_data):
+        auto_scale = validated_data.pop('__auto_scale__', False)
         rigs_data = validated_data.pop('rigs', [])
         infra_data = validated_data.pop('infrastructure', [])
 
@@ -164,6 +187,9 @@ class ProjectSerializer(serializers.ModelSerializer):
                     .filter(id=infra_data['id']) \
                     .update(**infra_data)
 
+        if auto_scale:
+            scale_project_object(project)
+
         return project
 
 class ProjectsSerializer(serializers.ModelSerializer):
@@ -189,7 +215,6 @@ class ProjectsSerializer(serializers.ModelSerializer):
 
     def update(self, projects, validated_data):
         project_ids = validated_data.pop('project_ids', [])
-
         projects._meta.model.objects \
             .filter(pk=projects.pk) \
             .update(**validated_data)
@@ -341,8 +366,6 @@ class ProjectCostsSerializer(serializers.ModelSerializer):
                 product['product'] = k
                 restructured_data['product'].append(product)
         
-        print (restructured_data)
-
         return restructured_data
 
 class ProjectSimulationSerializer(serializers.ModelSerializer):
@@ -422,6 +445,18 @@ class ProjectStatementSerializer(
                     )
 
         return obj
+    
+def scale_project_object(project):
+    proj = project.as_drillbit_object()
+    proj.scale()
+
+    rig = project.rigs.all()[0]
+    rig.quantity = proj.rigs.quantity
+    rig.save()
+
+    for (infra, scaled) in zip(project.infrastructure.all(), proj.infrastructure ):
+        infra.quantity = scaled.quantity
+        infra.save()
 
 def create_new_block_level_statement(sim):
     blocks = BlockScheduleSerializer(
@@ -442,8 +477,16 @@ def create_new_block_level_statement(sim):
         price.forecast,
         fees.forecast,
         hash_rate.forecast * 1e6 * 1e12 # convert from M TH/s to H/s
+        #// hack to handle network hash rate b/c number is too big for calculation; see FactorForm line 55 for offsetting hack in frontend
     )
-    project = sim.project.as_drillbit_object()
+    if sim.project.target_ambient_temp:
+        temp = fit_temperature_to_environment(sim.project.target_ambient_temp, blocks)
+        project = sim.project.as_drillbit_object(temp)
+    else:
+        project = sim.project.as_drillbit_object()
+
+    project.implement()
+
     stat = ProjectTemplate(env, project)
 
     env = stat.env.to_frame(with_periods=False).to_json()
@@ -486,6 +529,31 @@ def load_json_block_statement_and_resample(value, frequency):
     df.columns = df.columns.strftime('%Y-%m-%d')
     
     return df.to_json()
+
+def fit_temperature_to_environment(temp, blocks):
+    # temp = pd.Series(temp['data'], index=pd.PeriodIndex(temp['periods'], freq='H'))
+    temp = pd.Series(temp)
+    temp.index = pd.PeriodIndex(temp.index, freq='H')
+    temp = temp.resample('10T').ffill()
+
+    n_leap_years = pd.period_range(start=blocks.index[0], end=blocks.index[-1], freq='A')
+    n_leap_years = n_leap_years.is_leap_year.sum()
+    n_years = blocks.index[-1].year - temp.index[-1].year + 1
+    full_temp = pd.concat([temp]*n_years)
+
+    if n_leap_years:
+    #     hack to handle leap_years
+        full_temp = pd.concat((full_temp, full_temp.iloc[-n_leap_years*24*6:]))
+
+    full_temp.index = pd.period_range(start=full_temp.index[0], freq='10T', periods=full_temp.size)
+    missing = blocks.shape[0] - full_temp.loc[blocks.index[0]: blocks.index[-1]].shape[0]
+    end = blocks.index.shift(missing)[-1] if missing > 0 else blocks.index[-1]
+
+    full_temp = full_temp.loc[blocks.index[0]:end]
+    full_temp = full_temp.to_frame()
+    full_temp.columns = ['Temp']
+    
+    return full_temp.Temp.tolist()
 
 class ProjectStatementSummarySerializer(serializers.ModelSerializer):
     environment = serializers.PrimaryKeyRelatedField(

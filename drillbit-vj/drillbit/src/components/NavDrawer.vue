@@ -13,7 +13,6 @@ const globalState = useGlobalStateStore()
   >
     <v-list
       nav
-      height="250"
     >
       <v-list-item
         v-for="(item, i) in globalState.routes"

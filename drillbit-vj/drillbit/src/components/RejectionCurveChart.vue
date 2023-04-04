@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, toRefs } from 'vue'
 
-import ScatterPlusLineChart from '@/components/reuseable/ScatterPlusLineChart.vue'
+import ScatterPlusLineChart from '@/components/reuseable/charts/ScatterPlusLineChart.vue'
 
 const props = defineProps({
   object: {
