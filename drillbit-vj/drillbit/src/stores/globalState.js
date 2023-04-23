@@ -7,7 +7,7 @@ export var navRoutes = [
   {text: 'Dry Bulb', name: 'dry-bulb', link:'/dry-bulb'},
   {text: 'Rigs', name:'rigs', link: '/rigs'},
   {text: 'Infrastructure', name:'infra', link: '/infrastructure'},
-  {text: 'Environments', name:'enviro', link: '/environments'},
+  {text: 'Projects', name:'projects', link: '/projects'},
   {text: 'Test', name:'test', link: '/test'}
 ]
 

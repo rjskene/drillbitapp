@@ -1,10 +1,12 @@
 <script setup>
 import { ref, toRefs, computed, defineProps, defineEmits, defineExpose } from 'vue'
+import { useVModel } from '@vueuse/core'
 
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
 import CrudActions from './CrudActions.vue'
+
 
 const props = defineProps({
   data: {
@@ -43,14 +45,19 @@ const props = defineProps({
     type: String,
     default: 'horizontal'
   },
+  loading: {
+    type: Boolean,
+    default: false,
+  }
 })
-const { name, data } = toRefs(props)  // data is a reactive ref
+
+const { data } = toRefs(props)
+
 const dtable = ref(null) // used to access Datatable component refs
 const filters = ref(props.filters) // value attribute needs to be changed
 const selections = ref([])
 const hasSelections = computed(() => selections.value.length > 0)
 const editingRows = ref([])
-const newRowIndex = ref(1)
 
 const dtableAttrs = computed(() => {
   let dtableAttrs = {}
@@ -72,63 +79,44 @@ const dtableAttrs = computed(() => {
   }
   return dtableAttrs
 })
-const emit = defineEmits(['save', 'delete', 'undo', 'redo'])
+const emit = defineEmits(['add', 'update', 'delete'])
 const onRowEditSave = (event) => {
   let { newData } = event
-  let index = dtable.value.findIndex(newData, data.value) // have to find index position of row in the RAW/MAIN array provided to Datatable as `value`
-  data.value[index] = newData
+  emit('update', newData)
 }
-const addNew = (dtable) => {
-  const newRow = {}
-  Object.keys(dtable.value[0]).forEach(k => {newRow[k] = null})
-  newRow['id'] = dtable.value[dtable.value.length - 1].id + newRowIndex.value  // takes id of last value and adds newRowIndex to it
-  data.value.unshift(newRow)
-  newRowIndex.value++
+const addNew = () => {
+  emit('add')
 }
-const deleteSelections = (dtable, selections) => {
-  if (dtable.value && hasSelections.value) {
-    let data = dtable.value.filter(val => {return !selections.includes(val)})
-    emit('delete', {data})
-  }
-}
-const emitSave = () => {
-  emit('save')
-}
-const emitUndo = () => {
-  emit('undo')
-}
-const emitRedo = () => {
-  emit('redo')
+const deleteSelections = () => {
+  emit('delete', selections.value)
+  selections.value = []
 }
 defineExpose({dtable})
 </script>
 
 <template>
   <CrudActions
-    :dtable="dtable"
     :hasSelections="hasSelections"
-    :save-state="props.saveState"
-    @undo="emitUndo"
-    @redo="emitRedo"
-    @save="emitSave"
-    @delete:selections="deleteSelections(dtable, selections)"
-    @add:new="addNew(dtable)"
+    @add="addNew()"
+    @delete="deleteSelections()"
+    @export:csv="dtable.exportCSV()"
   />
   <DataTable
     ref="dtable"
     dataKey="id"
     :value="data"
-    :filterDisplay="props.filterDisplay"
-    selectionMode="multiple"
-    @row-edit-save="event => onRowEditSave(event, data)"
-    v-model:selection="selections"
     v-model:filters="filters"
+    :filterDisplay="props.filterDisplay"
+    :showFilterMatchModes="true"
+    v-model:selection="selections"
+    selectionMode="multiple"
     v-model:editingRows="editingRows"
+    @row-edit-save="event => onRowEditSave(event, data)"
     :scrollable="true"
     :scrollDirection="props.scrollDirection"
-    :showFilterMatchModes="true"
     sortMode="multiple"
     removableSort
+    :loading="loading"
     class="p-datatable-sm mt-3"
     stripedRows
     v-bind="dtableAttrs"

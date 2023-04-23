@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, toRefs, defineExpose, watch } from 'vue'
+import { ref, computed, toRefs, defineExpose, watch, onMounted } from 'vue'
 
 import BaseChart from '../../reuseable/charts/BaseChart.vue'
 import PlaceholderChart from '../../reuseable/charts/PlaceholderChart.vue'
@@ -36,7 +36,6 @@ const activeStore = computed(() => {
 const data = computed(() => {
   return activeStore.value.object?.data
 })
-
 const chartArgs = ref(null)
 const updateChartArgs = (data) => {
   data = every_nth(data, 1000)
@@ -79,7 +78,6 @@ const updateChartArgs = (data) => {
     yTickFormatOptions: activeElement.value?.chartOptions.yTickFormatOptions,
   }
 }
-
 watch(data, (data) => {
   if (data)
     updateChartArgs(data)
@@ -127,6 +125,7 @@ watch(data, (data) => {
         <PlaceholderChart v-else-if="!createState?.isLoading && !activeStore.object?.data"></PlaceholderChart>
         <BaseChart
           v-else-if="chartArgs"
+          ref="chart"
           v-bind="chartArgs"
         />
       </div>

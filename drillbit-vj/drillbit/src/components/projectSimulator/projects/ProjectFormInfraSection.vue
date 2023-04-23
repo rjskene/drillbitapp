@@ -39,7 +39,6 @@ const store = computed(() => {
 })
 
 const items = computed(() => {
-  console.log('items', store.value.objects)
   return store.value.objects
 })
 

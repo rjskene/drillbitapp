@@ -57,6 +57,11 @@ const object = computed(() => {
   return objects.value[0]
 })
 
+watch(() => stations.value, (newVal, oldVal) => {
+  if (newVal.length > 0) {
+    station.value = stations.value[0]
+  }
+})
 watch(() => station.value, (newVal, oldVal) => {
   if (newVal) {
     stationIndex.value = stations.value.findIndex((obj) => obj.id === station.value.id)
@@ -81,7 +86,13 @@ watchEffect(() => {
     dataStore.getTypes({})
     dataStore.getVariables({type: type.value})
     dataStore.getPeriods({type: type.value, variable: variable.value})
-    loadState.value = useAsyncState(dataStore.getObjects(getObjectsParams.value).then(() => updateChartArgs()))
+    console.log(getObjectsParams.value)
+    loadState.value = useAsyncState(
+      dataStore.getObjects(getObjectsParams.value).then(() => {
+        console.log(dataStore.objects)
+        updateChartArgs()
+      })
+    )
   }
 })
 onMounted(() => {

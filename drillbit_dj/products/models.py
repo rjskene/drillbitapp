@@ -10,10 +10,10 @@ class AbstractBaseRig(ProjectModel):
     class Meta:
         abstract = True
 
-    make = models.CharField('Make', max_length=100)
-    model = models.CharField(max_length=100)
-    generation = models.CharField(max_length=100, null=True, blank=True)
-    manufacturer = models.CharField(max_length=100)
+    make = models.CharField('Make', max_length=100, null=True, blank=True)
+    model = models.CharField(max_length=100, null=True, blank=True)
+    generation = models.CharField(max_length=100,  null=True, blank=True)
+    manufacturer = models.CharField(max_length=100, null=True, blank=True)
 
     hash_rate = models.FloatField()
     power = models.FloatField()
@@ -23,15 +23,18 @@ class AbstractBaseRig(ProjectModel):
 
     @property
     def name(self):
-        name = f'{self.make} {self.model}'
+        if self.make and self.model:
+            name = f'{self.make} {self.model}'
 
-        if self.generation:
-            if not self.generation.isalpha() or len(self.generation) == 1:
-                name += f'{self.generation}'
-            else:
-                name += f' {self.generation}'
-        
-        return name
+            if self.generation:
+                if not self.generation.isalpha() or len(self.generation) == 1:
+                    name += f'{self.generation}'
+                else:
+                    name += f' {self.generation}'
+            
+            return name
+        else:
+            return None
 
     @property
     def efficiency(self):
@@ -57,7 +60,7 @@ class AbstractBaseInfrastructure(ProjectModel):
     class Meta:
         abstract = True
     
-    name = models.CharField('Name', max_length=100)
+    name = models.CharField('Name', max_length=100, null=True, blank=True)
     capacity = models.FloatField('Power Capacity', default=None, null=True)
     pue = models.FloatField('Power Usage Effectiveness')
     price = models.FloatField('Price')
@@ -171,35 +174,49 @@ class WeatherData(ProjectModel):
 
 # WeatherStation.objects.bulk_create(WeatherStation(**row.to_dict()) for idx, row in df.iterrows())
 
-# fpath = '/Users/spindicate/Documents/programming/weather-stations/dry_bulb_frequency_by_location/'
+def save_dry_bulb_frequency():
+    import os
+    import pandas as pd
+    from tqdm.auto import tqdm
 
-# datas = []
-# for fname in tqdm(os.listdir(fpath)):
-#     if not '.DS_Store' in fname:
-#         df = pd.read_csv(fpath + fname, skiprows=8)
-#         data = WeatherData(
-#             station=WeatherStation.objects.get(id=fname.split('_')[0]),
-#             data=df.to_dict('list'),
-#             type='single-variable frequency',
-#             units='IP',
-#             period='annual',
-#             variable='Dry-Bulb'
-#         )
-#         datas.append(data)
+    fpath = '/Users/spindicate/Documents/programming/weather-stations/dry_bulb_frequency_by_location/'
+    datas = []
+    for fname in tqdm(os.listdir(fpath)):
+        if not '.DS_Store' in fname and 'done' != fname:
+            df = pd.read_csv(fpath + fname, skiprows=8)
+            data = WeatherData(
+                station=WeatherStation.objects.get(id=fname.split('_')[0]),
+                data=df.to_dict('list'),
+                type='Single-Variable Frequency',
+                units='IP',
+                period='Annual',
+                variable='Dry-Bulb'
+            )
+            datas.append(data)
+    
+    WeatherData.objects.bulk_create(datas)
 
-# from products.models import WeatherData
-# fpath = '/Users/spindicate/Documents/programming/weather-stations/hourly_temp_by_month/'
 
-# datas = []
-# for fname in tqdm(os.listdir(fpath)):
-#     if not '.DS_Store' in fname:
-#         df = pd.read_csv(fpath + fname, skiprows=8)
-#         data = WeatherData(
-#             station=WeatherStation.objects.get(id=fname.split('_')[0]),
-#             data=df.to_dict('list'),
-#             type='diurnal',
-#             units='IP',
-#             period=fname.split('_')[1],
-#             variable='Dry-Bulb'
-#         )
-#         datas.append(data)
+def save_diurnal():
+    import os
+    import pandas as pd
+    from tqdm.auto import tqdm
+
+    from products.models import WeatherData
+    fpath = '/Users/spindicate/Documents/programming/weather-stations/hourly_temp_by_month/'
+
+    datas = []
+    for fname in tqdm(os.listdir(fpath)):
+        if not '.DS_Store' in fname and 'done' != fname:
+            df = pd.read_csv(fpath + fname, skiprows=8)
+            data = WeatherData(
+                station=WeatherStation.objects.get(id=fname.split('_')[0]),
+                data=df.to_dict('list'),
+                type='Diurnal',
+                units='IP',
+                period=fname.split('_')[1],
+                variable='Dry-Bulb'
+            )
+            datas.append(data)
+
+    WeatherData.objects.bulk_create(datas)

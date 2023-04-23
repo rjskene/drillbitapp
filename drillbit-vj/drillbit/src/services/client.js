@@ -8,8 +8,17 @@ class Client {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json'
-      }
+      },
     })
+        // Add a response interceptor
+    this.client.interceptors.response.use(function (response) {
+      // Do something with response data
+      return response;
+    }, function (error) {
+      if (error.response)
+        console.error(error.response)
+      return Promise.reject(error);
+});
   }
   async getObjects({app, model, params}) {
     let res = await this.client.get(`/${app}/${model}/`, {params})
@@ -51,8 +60,12 @@ class Client {
     let res = await this.client.get(`/${app}/${model}/${pk}/costs/`)
     return res
   }
-  async getProjectTasks({task_id}) {
-    let res = await this.client.get(`/projects/tasks/${task_id}/`)
+  async getProjectTasks({taskId}) {
+    let res = await this.client.get(`/projects/tasks/${taskId}/`)
+    return res
+  }
+  async deleteStatementsForSims({data}) {
+    let res = await this.client.delete('/projects/simulation/delete_all_statements/', {data})
     return res
   }
   async checkStatementExists({params}) {

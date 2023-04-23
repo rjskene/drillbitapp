@@ -15,7 +15,7 @@ export const productPlugin = ({store}) => {
   if (!Object.keys(store.$state).includes('object')) {
     store.object = ref(null)
   }
-  if (!Object.keys(store.$state).includes('object')) {
+  if (!Object.keys(store.$state).includes('objects')) {
     store.objects = ref([])
   }
   store.hasObjects = computed(() => store.objects.length > 0)
@@ -48,7 +48,8 @@ export const productPlugin = ({store}) => {
       }).then((result) => {
         // If return value is an array, store as objects, else store as object
         if (Array.isArray(result.data))
-          store.objects = result.data
+          {store.objects = result.data
+          }
         else
           store.object = result.data
         })  
@@ -63,7 +64,7 @@ export const productPlugin = ({store}) => {
       store.object = result.data
     })
   }
-  store.udpateObject = async({pk, params}) => {
+  store.updateObject = async({pk, params}) => {
     return client.updateObject({
       app: store.app,
       model: store.dataModel,
@@ -89,6 +90,13 @@ export const productPlugin = ({store}) => {
       promise = store.createObject({params})
 
     promise.then((result) => {store.objects = result.data})
+  }
+  store.deleteObject = async (pk) => {
+    return client.deleteObject({
+      app: store.app, 
+      model: store.dataModel, 
+      pk
+    })
   }
   store.findObjectById = (id) => {
     return store.objects.find((obj) => obj.id === id)
@@ -214,7 +222,6 @@ function useForecastModelForm() {
   }
   return { initFormParams, initFormFields, initCreateParams, stateStore }
 }
-
 export const useCurrentStateStore = defineStore('currentStateStore', () => {
   const app = 'environment'
   const dataModel = 'current-state'
@@ -276,7 +283,7 @@ export const useHashRateStore = defineStore('hashRateStore', () => {
 
   const formParams = ref(initFormParams)
   watch(() => stateStore.objects, (objects) => {
-    if (objects)
+    if (objects) 
       formParams.value.initial = (stateStore.objects['Network Hash Rate'] / 1e18).toFixed(2)
   })
   const formFields = computed(() => {
@@ -284,8 +291,7 @@ export const useHashRateStore = defineStore('hashRateStore', () => {
     formFields[1].prefix = ''
     formFields[1].suffix = ' EH/s'
     return formFields
-  })
-  
+  })  
   const createParams = computed(() => initCreateParams(formParams.value))
 
   return { app, dataModel, formParams, createParams, formFields }
@@ -333,7 +339,10 @@ export const useEnvironmentStore = defineStore('environmentStore', () => {
       }).then(result => {
         store.object = result.data
         Object.keys(store.formParams).forEach((key) => {
-          store.formParams[key] = store.object[key]
+          if (['mean', 'volatility'].includes(key)) // must adjust incoming values to fit form
+            store.formParams[key] = store.object[key] * 100
+          else
+            store.formParams[key] = store.object[key]      
         })
       })
       promises.push(promise)
@@ -445,7 +454,6 @@ export const useProjectsStore = defineStore('projectsStore', () => {
     return client
       .getObjectsByPK({app, model: dataModel, pk})
       .then((result) => {
-        console.log(result.data)
         object.value = result.data
         projectStore.$patch((state) => {
           state.projects = result.data.projects
@@ -468,70 +476,150 @@ export const useProjectsStore = defineStore('projectsStore', () => {
       storage: sessionStorage,
   },
 })
-
 export const useSimulationStore = defineStore('simulationStore', () => {
   const app = 'projects'
   const dataModel = 'simulation'
 
-  return { app, dataModel }
-})
+  const envStore = useEnvironmentStore()
+  const projectsStore = useProjectsStore()
 
+  const simsByAttrs = computed(() => {
+    let sims = []
+    projectsStore.object.projects.forEach((project) => {
+      sims.push({
+        environment: envStore.object.id,
+        project: project.id,
+      })
+    })
+    return sims
+  })
+  const deleteStatements = async ({simsByIds}) => {
+    return client.deleteStatementsForSims({data: simsByIds})
+  }
+
+  return { app, dataModel, simsByAttrs, deleteStatements }
+})
 export const useStatementStore = defineStore('statementStore', () => {
   const envStore = useEnvironmentStore()
   const projectsStore = useProjectsStore()
+  const simStore = useSimulationStore()
   const app = 'projects'
   const dataModel = 'statement'
 
+  const allowedFreqs = ['H', 'D', 'M', 'Q', 'A']
+
   const summary = ref(null)
   const byAccount = ref(null)
-
-  const object = ref(null)
-  const objects = ref([])
-
+    
   const taskStatuses = ref({})
-  const tasksComplete = computed(() => {
-    return Object.values(taskStatuses.value).length > 0 
-      && Object.values(taskStatuses.value).every((status) => status === 'SUCCESS')
-  })        
+  const hasTasks = computed(() => Object.keys(taskStatuses.value).length > 0)
+  const nTasksToComplete = computed(() => {
+    return simStore.objects.length * allowedFreqs.length
+  })
+  const nTasksComplete = computed(() => {
+    let nComplete = 0
 
-  const checkTaskComplete = (task_id, interval, callback) => {
+    for (let sim of Object.keys(taskStatuses.value)) {
+      for (let frequency of allowedFreqs) {
+        if (taskStatuses.value[sim][frequency]['status'] === 'SUCCESS') {
+          nComplete += 1
+        }
+      }
+    }
+    return nComplete
+  })
+  const allTasksComplete = computed(() => nTasksComplete.value === nTasksToComplete.value)
+  
+  const projectTasksComplete = computed(() => {
+    let projectStatuses = {}
+    if (hasTasks.value) {
+      for (let [sim, statuses] of Object.entries(taskStatuses.value)) {
+        let simObj = simStore.objects.find((obj) => obj.id === Number(sim))
+        projectStatuses[simObj.project] = allowedFreqs.every((freq) => statuses[freq].status === 'SUCCESS')
+      }
+    }
+    return projectStatuses
+  })
+  const initStatus = (tasksBySim) => {
+    for (let [sim, tasks] of Object.entries(tasksBySim)) {
+      taskStatuses.value[sim] = {}
+      for (let [frequency, taskId] of Object.entries(tasks)) {
+        taskStatuses.value[sim][frequency] = {}
+        taskStatuses.value[sim][frequency]['task_id'] = taskId
+        taskStatuses.value[sim][frequency]['status'] = null
+      }
+    }
+  }
+  const fetchStatus = () => {
+    Object.entries(taskStatuses.value).forEach(([sim, tasks]) => {
+      Object.entries(tasks).forEach(([frequency, task]) => {
+        checkTaskComplete(task['task_id'], 2000, (result) => {
+          taskStatuses.value[sim][frequency]['status'] = result.state
+        })
+      })
+    })
+  }
+  const checkTaskComplete = (taskId, interval, callback) => {
     var counter = 0
     let intervalId = setInterval(() => {
-      client.getProjectTasks({task_id}).then((result) => {
+      client.getProjectTasks({taskId}).then((result) => {
         try {
           if (result.data.state === 'SUCCESS') {
             clearInterval(intervalId)
             callback(result.data)
           } else {
             counter++
-            if (counter > 10) {
+            if (counter > 100) {
               clearInterval(intervalId)
+              console.log('task did not complete')
               throw new Error('Max retries exceeded')
             }
           }
         } catch (err) {
-          console.error(err)
+          counter++
           clearInterval(intervalId)
+          if (counter > 2) {
+            console.log('an error was thrown and caught')
+            throw new Error('Max retries exceeded')
+          }
         }
+      }).catch((err) => {
+        console.error(err)
+        clearInterval(intervalId) // this will stop the interval
       })
     }, interval)
-  } 
-  const fetchStatus = () => {
-    Object.keys(taskStatuses.value).forEach((task_id) => {
-      checkTaskComplete(task_id, 1000, (result) => {
-        taskStatuses.value[task_id] = result.state
-      })
-    })
   }
-  const createObjects = async ({params}) => {
+  const createObjects = async ({params, overwrite}) => {
+    /* 
+    Logic for creating statements:
+    1. Check if statements exist for the given environment and projects
+    2. If they do, get the summary and byAccount
+    3. If they don't, create the statements
+
+    If overwrite is true, delete the existing statements first; thus response to 1. above will always be false
+
+    The main BLOCK level statement and the summary statement are created synchronously. So, the summary table is
+    fetched immediately after the main monthly statement is created. 
+    
+    The other periods ['H', 'D', 'M', 'Q', 'A'] are all created asynchronously and so a task_id is 
+    returned for each. Completion is monitored by status checks on the task_id. Before the task is 
+    complete, the byAccount data for the period is not available.
+    */
+
     var objParams = {
       environment: envStore.object.id,
-      projects: projectsStore.object.projects.map((project) => project.id)
+      projects: projectsStore.object.projects.map((project) => project.id),
+      frequency: params.frequency,
+    }
+    if (overwrite) {
+      await simStore.deleteStatements({
+        simsByIds: simStore.objects.map((sim) => sim.id)
+      })
     }
     const res = await client.checkStatementExists({params: objParams})
     if (res.data) {
       getSummary({params: objParams})
-      getByAccount({params: objParams})
+      getByAccount({params: objParams})    
     } else { 
       return client.createObjects({
         app, 
@@ -539,10 +627,7 @@ export const useStatementStore = defineStore('statementStore', () => {
         params
       }).then((result) => {
         getSummary({params: objParams})
-        let task_ids = result.data.map((obj) => obj['M'])
-        taskStatuses.value = {} // need to reset 
-        task_ids.forEach((task_id) => {taskStatuses.value[task_id] = null})
-        
+        initStatus(result.data)
         fetchStatus()
       })
     } 
@@ -558,9 +643,11 @@ export const useStatementStore = defineStore('statementStore', () => {
     })
   }  
   return { 
-    app, dataModel, object, objects, createObjects, summary, getSummary, 
+    app, dataModel, allowedFreqs, 
+    createObjects, summary, getSummary, 
     byAccount, getByAccount,
-    taskStatuses, tasksComplete
+    taskStatuses, hasTasks, nTasksComplete, nTasksToComplete, allTasksComplete,
+    projectTasksComplete,
   }
   }, {
     persist: {

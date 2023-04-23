@@ -61,7 +61,7 @@ watch(() => rig.value.rig_id, (rig_id) => {
     </v-col>
     <v-col class="d-flex align-center pl-3 pt-0">
       <span class="text-body-2 text-medium-emphasis mr-1">Power:</span>
-      {{format.power(object?.power)}}
+      {{format.power(object?.power, { toFixed: 2 })}}
     </v-col>
     <v-col class="d-flex align-center pl-3 pt-0">
       <span class="text-body-2 text-medium-emphasis mr-1">HR:</span>

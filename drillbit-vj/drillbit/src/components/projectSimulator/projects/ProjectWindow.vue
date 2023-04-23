@@ -20,7 +20,6 @@ const { projects } = storeToRefs(projectStore)
 const activeIndex = ref(0)
 
 const load = async (params) => {
-  console.log('load', params)
   if ((typeof params === 'string' || params instanceof String))
     projectsStore.$patch((state) => {
       state.object = {name: params}

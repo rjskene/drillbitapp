@@ -1,13 +1,10 @@
 <script setup>
-import { ref, computed, watchEffect, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAsyncState } from '@vueuse/core'
-import { useRefHistory } from '@vueuse/core'
 
 import InputText from 'primevue/inputtext'
-import MultiSelect from 'primevue/multiselect'
 import InputNumber from 'primevue/inputnumber'
-import Dropdown from 'primevue/dropdown'
 import { FilterMatchMode } from 'primevue/api'
 
 import CrudTable from '../components/reuseable/CrudTable.vue'
@@ -18,7 +15,6 @@ import { useRigStore } from '../stores/modules'
 
 const rigStore = useRigStore()
 const format = useFormatHelpers()
-const crudtable = ref(null)
 
 const columns = computed(() => {
   let cols = [
@@ -27,6 +23,7 @@ const columns = computed(() => {
     header: 'Make', 
     headerClass: 'table-header-center min-col-width-7dot5',
     bodyClass: 'table-body-center min-col-width-7dot5',
+    sortable: true,
     editor: {
       component: InputText,
     },
@@ -45,8 +42,12 @@ const columns = computed(() => {
     header: 'Model',
     headerClass: 'table-header-center min-col-width-7dot5',
     bodyClass: 'table-body-center min-col-width-7dot5',
+    sortable: true,
     editor: {
       component: InputText,
+      args: {
+        type: 'text',
+      }
     },
     filter: {
       component: InputText,
@@ -63,8 +64,12 @@ const columns = computed(() => {
     header: 'Generation',
     headerClass: 'table-header-center min-col-width-7dot5',
     bodyClass: 'table-body-center min-col-width-7dot5',
+    sortable: true,
     editor: {
       component: InputText,
+      args: {
+        type: 'text',
+      }
     },
   },
   {
@@ -72,8 +77,12 @@ const columns = computed(() => {
     header: 'Manufacturer',
     headerClass: 'table-header-center min-col-width-10',
     bodyClass: 'table-body-center min-col-width-10',
+    sortable: true,
     editor: {
       component: InputText,
+      args: {
+        type: 'text',
+      }
     },
     filter: {
       component: InputText,
@@ -91,6 +100,7 @@ const columns = computed(() => {
     headerClass: 'table-header-center min-col-width-7dot5',
     bodyClass: 'table-body-center min-col-width-7dot5',
     bodyFunc: (data, field) => format.hashRate(data[field]),
+    sortable: true,
     editor: {
       component: InputNumber,
       args: {
@@ -101,9 +111,10 @@ const columns = computed(() => {
   {
     field: 'power',
     header: 'Power',
-    headerClass: 'table-header-center',
+    headerClass: 'table-header-center min-col-width-7dot5',
     bodyClass: 'table-body-center min-col-width-7dot5',
-    bodyFunc: (data, field) => format.power(data[field]),
+    bodyFunc: (data, field) => format.power(data[field], {toFixed: 2}),
+    sortable: true,
     editor: {
       component: InputNumber,
       args: {
@@ -112,11 +123,20 @@ const columns = computed(() => {
     },
   },
   {
+    field: 'efficiency',
+    header: 'Efficiency',
+    headerClass: 'table-header-center min-col-width-7dot5',
+    bodyClass: 'table-body-center min-col-width-7dot5',
+    bodyFunc: (data, field) => format.efficiency(data[field], {toFixed: 1}),
+    sortable: true,
+  },
+  {
     field: 'buffer',
     header: 'Buffer',
-    headerClass: 'table-header-center',
+    headerClass: 'table-header-center min-col-width-2dot5',
     bodyClass: 'table-body-center min-col-width-2dot5',
     bodyFunc: (data, field) => format.percentage(data[field]),
+    sortable: true,
     editor: {
       component: InputNumber,
       args: {
@@ -127,9 +147,10 @@ const columns = computed(() => {
   {
     field: 'price',
     header: 'Price',
-    headerClass: 'table-header-center pl-12',
+    headerClass: 'table-header-center',
     bodyClass: 'table-body-right min-col-width-2dot5 padding-right-1',
     bodyFunc: (data, field) => format.currency(data[field]),
+    sortable: true,
     editor: {
       component: InputNumber,
       args: {
@@ -148,37 +169,54 @@ const filters = {
   'model': {value: null, matchMode: FilterMatchMode.CONTAINS},
   'manufacturer': {value: null, matchMode: FilterMatchMode.CONTAINS},
 }
-const { state, isReady, isLoading, error } = useAsyncState(() => rigStore.getObjects())
 
-const saveState = ref(null)
-const saveRigs = () => { saveState.value = useAsyncState(() => rigStore.updateObjects()) }
-
-const rigs = ref([])
-watchEffect(() => {
-  if (isReady.value) {
-    rigs.value = rigStore.objects
-  }
-})
-const { history, undo, redo } = useRefHistory(rigs, {deep: true})
-
-watch(rigs, (newVal, oldVal) => {
-  rigStore.$patch({objects: newVal})
+const { objects } = storeToRefs(rigStore)
+const state = ref(null)
+const loading = computed(() => { 
+  return state.value !== null ? false : state.value?.isLoading
 })
 
+const addRig = () => {
+  let add = rigStore.createObjects({
+    params: {
+      buffer: 0,
+      hash_rate: 0,
+      power: 0,
+  }}).then(() => {
+    rigStore.getObjects()
+  })
+  state.value = useAsyncState(add)
+}
+const updateRig = (data) => {
+  let update = rigStore.updateObject({
+      pk: data.id,
+      params: data,
+    }).then(() => {
+      rigStore.getObjects()
+    })
+  state.value = useAsyncState(update)
+}
+const deleteRig = (data) => {
+  let pk = data.map(data => data.id)
+  let deleteFunc = rigStore
+    .deleteObject(pk)
+    .then(() => {
+      rigStore.getObjects()
+  })
+  state.value = useAsyncState(deleteFunc)
+}
 </script>
 
 <template>
   <CrudTable
-    v-if="rigStore.hasObjects"
-    ref="crudtable"
-    :data="rigStore.objects"
+    v-if="objects"
+    @add="addRig()"
+    @update="(data) => updateRig(data)"
+    @delete="(data) => deleteRig(data)"
+    :data="objects"
     :filters="filters"
     :columns="columns"
-    @undo="undo"
-    @redo="redo"
-    @delete="({data}) => rigStore.$patch({objects: data})"
-    @save="saveRigs()"
-    :save-state="saveState"
+    :loading="loading"
   >
   </CrudTable>
 </template>  

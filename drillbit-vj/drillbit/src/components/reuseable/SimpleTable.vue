@@ -13,8 +13,12 @@ const props = defineProps({
     type: Array,
     required: true
   },
+  loading: {
+    type: Boolean,
+    default: false
+  }
 })
-const { name, data } = toRefs(props)  // data is a reactive ref
+const { name, data, loading } = toRefs(props)  // data is a reactive ref
 const dtable = ref(null) // used to access Datatable component refs
 
 </script>
@@ -26,11 +30,19 @@ const dtable = ref(null) // used to access Datatable component refs
     :value="data"
     :scrollable="true"
     :scrollDirection="props.scrollDirection"
+    :loading="loading"
     rowGroupMode="subheader" 
     groupRowsBy="product"
     class="p-datatable-sm mt-3"
     stripedRows
   >
+    <template #loading> 
+      <v-progress-circular
+        v-if="loading"
+        color="secondary"
+        indeterminate
+      />
+    </template>
     <Column
       v-for="col of columns"
       :field="col.field"
@@ -45,6 +57,7 @@ const dtable = ref(null) // used to access Datatable component refs
       <template v-else-if="col.spanWrap" #body="{data, field}">
         <span>{{data[field]}}</span>
       </template>
+
     </Column>
   </DataTable>
 </template>

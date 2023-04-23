@@ -12,7 +12,7 @@ import {
   useBlockScheduleStore, useBTCPriceStore, useFeeStore, useHashRateStore,
   useEnvironmentStore
 } from '@/stores/modules'
-import { useFormHelpers, useFormatHelpers } from '@/services/composables'
+import { useFormHelpers } from '@/services/composables'
 
 const formHelpers = useFormHelpers()
 const store = useEnvironmentStore()
@@ -63,7 +63,6 @@ const elementName = (element) => {
 
 const loadState = ref({})
 const load = (params) => {
-  console.log('load', params)
   if ((typeof params === 'string' || params instanceof String)) {
     store.$patch((state) => {
       state.object = {name: params}
@@ -99,6 +98,10 @@ const create = (element) => {
   )
   loadState.value = state
   return state
+}
+const clear = () => {
+  store.clear()
+  unlockAll()
 }
 
 const form = ref(null)
@@ -143,7 +146,7 @@ const readyOrNot = (name) => {
     <template #nav-panel>
       <v-combobox
         @update:modelValue="(params) => load(params)"
-        @click:clear="store.clear"
+        @click:clear="clear"
         :items="formHelpers.reverse(store.objects)"
         label="Environment"
         item-title="name"

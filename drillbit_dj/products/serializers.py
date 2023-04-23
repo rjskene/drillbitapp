@@ -10,19 +10,26 @@ from products.models import Rig, Cooling, HeatRejection, RejectionCurve, Electri
 class RigSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(allow_null=True, required=False) # needs to be declared explicilty so it is not read-only and available for updates
     name = serializers.SerializerMethodField()
+    efficiency = serializers.SerializerMethodField()
 
     class Meta:
         model = Rig
         fields = (
             'id',
             'name', 'make', 'model', 'generation', 'manufacturer', 
-            'hash_rate', 'power', 'buffer',
-            'price'
+            'hash_rate', 'power', 'efficiency',
+            'buffer', 'price'
         )
         list_serializer_class = ProjectListSerializer
     
-    def name(self, obj):
+    def get_name(self, obj):
         return obj.name
+
+    def get_efficiency(self, obj):
+        if obj.hash_rate:
+            return obj.power / obj.hash_rate    
+        else:
+            return 0
 
 class CoolingSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(allow_null=True, required=False) # needs to be declared explicilty so it is not read-only and available for updates
@@ -41,7 +48,11 @@ class CoolingSerializer(serializers.ModelSerializer):
             
 class HeatRejectionSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(allow_null=True, required=False) # needs to be declared explicilty so it is not read-only and available for updates
-    curve_id = serializers.PrimaryKeyRelatedField(source='curve.id', queryset=RejectionCurve.objects.all())
+    curve_id = serializers.PrimaryKeyRelatedField(
+        source='curve.id', 
+        # queryset=RejectionCurve.objects.all(),
+        read_only=True
+    )
     curve = serializers.SerializerMethodField(source='curve')
 
     class Meta:
@@ -59,7 +70,10 @@ class HeatRejectionSerializer(serializers.ModelSerializer):
         list_serializer_class = ProjectListSerializer
     
     def get_curve(self, obj):
-        return (obj.curve.a, obj.curve.b)
+        if obj.curve:
+            return (obj.curve.a, obj.curve.b)
+        else:
+            return (0,0)
 
 class ElectricalSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(allow_null=True, required=False) # needs to be declared explicilty so it is not read-only and available for updates

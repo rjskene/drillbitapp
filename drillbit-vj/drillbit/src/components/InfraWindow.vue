@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { VBtn } from 'vuetify/components/VBtn'
-
+import { useAsyncState } from '@vueuse/core'
 
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
@@ -14,24 +13,67 @@ import {
   useCoolingStore, useRejectionStore, useElectricalStore,
 } from '../stores/modules'
 import { useFormatHelpers, TableMaker } from '@/services/composables'
-import { useObjectManager } from '../services/composables'
 
 const format = useFormatHelpers()
-const crudtable = ref(null)
+
 const tabs = [
   {text: 'Cooling', store: useCoolingStore()},
   {text: 'Heat Rejection', store: useRejectionStore()},
   {text: 'Electrical', store: useElectricalStore()},
 ]
-const currentTab = ref('Heat Rejection')
+const currentTab = ref(0)
+const data = ref(tabs[0].store.objects)
+const tab = computed(() => {return tabs[currentTab.value]})
+const store = computed(() => {return tab.value?.store})
 
-const tabsObj = computed(() => {
-  let obj = {}
-  tabs.forEach(tab => {
-    obj[tab.text] = tab.store
-  })
-  return obj
+const updateData = () => {
+  data.value = store.value.objects
+}
+
+const state = ref(null)
+const loading = computed(() => { 
+  return state.value !== null ? false : state.value?.isLoading
 })
+
+const defaults = [
+  {price: 0 , pue: 0},
+  {price: 0 , pue: 0},
+]
+const defaultParams = computed(() => {
+  return defaults[currentTab.value]
+})
+
+const addInfra = () => {
+  let add = store.value.createObjects({
+    params: defaultParams.value}).then(() => {
+    store.value.getObjects().then(() => {
+      updateData()
+    })
+  })
+  state.value = useAsyncState(add)
+}
+const updateInfra = (data) => {
+  let update = store.value.updateObject({
+      pk: data.id,
+      params: data,
+    }).then(() => {
+      store.value.getObjects().then(() => {
+        updateData()
+    })
+    })
+  state.value = useAsyncState(update)
+}
+const deleteInfra = (data) => {
+  let pk = data.map(data => data.id)
+  let deleteFunc = store.value
+    .deleteObject(pk)
+    .then(() => {
+      store.value.getObjects().then(() => {
+        updateData()
+    })
+  })
+  state.value = useAsyncState(deleteFunc)
+}
 
 const columns = computed(() => {
   let cols = [
@@ -88,8 +130,7 @@ const columns = computed(() => {
         args: {
           mode: 'decimal',
           locale: "en-US",
-          minimumFractionDigits: 2,
-          suffix: ' x',
+          minFractionDigits: 2,
           class: 'edit-width-95'
         }
       },
@@ -111,7 +152,7 @@ const columns = computed(() => {
       },
     },
   ]
-  if (currentTab.value === 'Cooling') {
+  if (currentTab.value === 0) {
     cols.splice(2, 0, {
       field: 'number_of_rigs',
       header: 'Rigs',
@@ -129,7 +170,7 @@ const columns = computed(() => {
     }
     )
   }
-  else if (currentTab.value === 'Heat Rejection') {
+  else if (currentTab.value === 1) {
     cols.splice(2, 0, {
       field: 'design_dry_bulb',
       header: 'Design Dry Bulb',
@@ -176,24 +217,15 @@ const columns = computed(() => {
   
   return table.columns
 })
-
-const tabData = () => {
-  return tabsObj.value[currentTab.value].objects
-}
-
 const filters = computed(() => {
   let base = {
     'name': {value: null, matchMode: FilterMatchMode.CONTAINS},
     'capacity': {operator: FilterOperator.AND, constraints: [{value: null, matchMode: FilterMatchMode.EQUALS}]}
   }
-  if (currentTab.value === 'Heat Rejection') 
+  if (currentTab.value === 1) 
     base['design_dry_bulb'] = {operator: FilterOperator.AND, constraints: [{value: null, matchMode: FilterMatchMode.EQUALS}]}
   
   return base
-})
-const objManager = ref(useObjectManager({store: tabsObj.value[currentTab.value]}))
-watch(currentTab, (currentTab, oldVal) => {
-  objManager.value = useObjectManager({store: tabsObj.value[currentTab]})
 })
 </script>
   
@@ -204,12 +236,13 @@ watch(currentTab, (currentTab, oldVal) => {
       bg-color="background"
     >
       <v-tab
-        v-for="tab in tabs"
+        v-for="(tab, i) in tabs"
         :key="tab + '-Tab'"
-        :value="tab.text"
+        :value="i"
         class="tab-color-surface rounded-t-xl"
         slider-color="primary-variant-1"
-      >{{ tab.text }}
+      >
+        {{ tab.text }}
       </v-tab>
     </v-tabs>
     <v-window
@@ -217,9 +250,9 @@ watch(currentTab, (currentTab, oldVal) => {
       color="surface-lighten-1"
       >
         <v-window-item
-          v-for="tab in tabs"
+          v-for="(tab, i) in tabs"
           :key="tab + '-Window'"
-          :value="tab.text"
+          :value="i"
         >
           <v-container>
             <v-row class="d-flex justify-center">
@@ -228,18 +261,16 @@ watch(currentTab, (currentTab, oldVal) => {
                 <!-- when provided directly, data from other table was sneaking into component -->
                 <!-- before columns could update -->
                 <CrudTable
-                  v-if="tab.store.hasObjects"
-                  ref="crudtable"
-                  :data="tabData()"
+                  v-if="data"
+                  @add="addInfra()"
+                  @update="(data) => updateInfra(data)"
+                  @delete="(data) => deleteInfra(data)"
+                  :data="data"
                   :filters="filters"
                   :columns="columns"
-                  @undo="objManager.undo()"
-                  @redo="objManager.redo()"
-                  @delete="({data}) => tab.store.$patch({objects: data})"
-                  @save="objManager.save()"
-                  :save-state="objManager.saveState"
-                  scroll-direction="vertical"
+                  :loading="loading"
                 />
+                {{ data }}
               </v-col>
             </v-row>
           </v-container>

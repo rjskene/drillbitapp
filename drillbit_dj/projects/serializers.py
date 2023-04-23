@@ -374,6 +374,13 @@ class ProjectSimulationSerializer(serializers.ModelSerializer):
         fields = '__all__'
         list_serializer_class = ProjectListSerializer
 
+    def get_unique_together_validators(self):
+        """
+        Overriding method to disable unique together checks that fail b/c 
+        of the get-or-create logic in the create method
+        """
+        return []
+
     def create(self, validated_data):
         obj, created = ProjectSimulation.objects.get_or_create(**validated_data)
         return obj
@@ -384,11 +391,11 @@ class ProjectStatementSerializer(
 ):
     environment = serializers.PrimaryKeyRelatedField(
         source='sim.environment',
-        queryset=Environment.objects.all(),
+        read_only=True,
     )
     project = serializers.PrimaryKeyRelatedField(
         source='sim.project',
-        queryset=Project.objects.all()
+        read_only=True,
     )
     name = serializers.CharField(source='sim.project.name', read_only=True)
 
@@ -401,6 +408,7 @@ class ProjectStatementSerializer(
         fields = (
             'id',
             'name',
+            'sim',
             'project',
             'environment',
             'env',
@@ -411,7 +419,7 @@ class ProjectStatementSerializer(
 
     def create(self, validated_data):
         data = validated_data.copy()
-        sim, created = ProjectSimulation.objects.get_or_create(**data['sim'])
+        sim = data.pop('sim')
         frequency = data.pop('frequency')
         try:
             obj = ProjectStatement.objects.get(sim=sim, frequency=frequency)
@@ -428,7 +436,11 @@ class ProjectStatementSerializer(
                     ))
                 env = load_json_block_statement_and_resample(obj.env, frequency)
                 istat = load_json_block_statement_and_resample(obj.istat, frequency)
-                roi = load_json_block_statement_and_resample(obj.roi, frequency)
+
+                if frequency in ['M', 'Q', 'Y']: # ROI cannot be less than monthly
+                    roi = load_json_block_statement_and_resample(obj.roi, frequency)
+                else:
+                    roi = None
 
             with transaction.atomic():
                 obj = ProjectStatement.objects.create(
@@ -487,12 +499,18 @@ def create_new_block_level_statement(sim):
 
     project.implement()
 
-    stat = ProjectTemplate(env, project)
+    stat = ProjectTemplate(env, project, add_roi=True)
 
     env = stat.env.to_frame(with_periods=False).to_json()
     istat = stat.istat.to_frame(with_periods=False).to_json()
-    roi = stat.roi.to_frame(with_periods=False).to_json()
+    roi = stat.roi.to_frame(with_periods=False).to_json() if hasattr(stat, 'roi') else None
     summary = analysis(stat, project).summary()
+
+    import math
+    import numbers
+    for k, v in summary.items():
+        if v is None or (isinstance(v, numbers.Number) and math.isnan(v)):
+            summary[k] = 0
 
     return env, istat, roi, summary
 
@@ -510,7 +528,9 @@ def load_json_block_statement_and_resample(value, frequency):
     # HERE I NEED DIFFERENT RESAMPLE FUNCTIONS FOR DIFFERENT
     # ROWS .....!!!!!
     last = [
-        'Number of Rigs',   
+        'Number of Rigs', 
+        'BTC Value, if held',
+        'BTC, if held',  
     ]
     mean = [
         'Hash Rate', # technically INCORRECT; should add up all hashes in period, divide by seconds in period
@@ -526,7 +546,9 @@ def load_json_block_statement_and_resample(value, frequency):
             aggs[index] = 'sum'
 
     df = df.T.resample(frequency).agg(aggs).T
-    df.columns = df.columns.strftime('%Y-%m-%d')
+
+    strfmt = '%Y-%m-%d %HH' if frequency == 'H' else '%Y-%m-%d'
+    df.columns = df.columns.strftime(strfmt)
     
     return df.to_json()
 

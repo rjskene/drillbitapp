@@ -59,7 +59,7 @@
     backgroundColor: 'rgba(0,0,0,.1)'
   }
   const baseChartOptions = {
-    maintainAspectRatio: false,
+    maintainAspectRatio: true,
     plugins: {
       legend: {display: false},
       annotation: {

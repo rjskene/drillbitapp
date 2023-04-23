@@ -32,7 +32,6 @@ const prev = () => {
 <template>
     <v-card
       elevation="0"
-      class="ma-3 pa-6 mb-0 pb-0"
     >
     <v-card-actions v-if="props.scrollPosition === 'top'" class="justify-space-between">
         <v-btn

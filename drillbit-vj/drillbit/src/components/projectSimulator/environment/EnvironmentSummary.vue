@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, toRefs } from 'vue'
 
-import Skeleton from 'primevue/skeleton'
 import PlaceholderChart from '../../reuseable/charts/PlaceholderChart.vue'
 import BaseChart from '../../reuseable/charts/BaseChart.vue'
 
@@ -25,6 +24,12 @@ const props = defineProps({
   },
 })
 const { elements, loading } = toRefs(props)
+
+const allStoresHaveData = computed(() => {
+  return elements.value.every((element) => {
+    return element.store.object?.data
+  })
+})
 
 const reshape1dArrayTo2dArray = (array, columns) => {
   const rows = Math.ceil(array.length / columns)
@@ -89,28 +94,37 @@ const chartArgs = computed(() => {
   
   
 <template>
-  <v-container>
+  <v-container
+    class="h-100"
+  >
+    <v-row 
+      v-if="loading || !allStoresHaveData"
+      class="h-100">
+      <v-col class="d-flex align-center justify-center h-100">
+        <v-progress-circular
+            v-if="loading"
+            indeterminate
+            color="secondary"
+          />
+          <PlaceholderChart 
+            v-else
+          />
+      </v-col>
+    </v-row>
     <v-row
+      v-else
       v-for="row in reshape1dArrayTo2dArray(elements, 2)"
-      class="d-flex justify-space-around h-100"
+      class="d-flex justify-space-around"
     >
       <v-col
         v-for="element in row" :key="element.text"
         cols="6"
-        class="h-100 ma-0"
       >
         <div 
           style="min-height: 300px"
           class="d-flex justify-center align-center"
         >
-          <v-progress-circular
-            v-if="loading && !element.store.object?.data"
-            indeterminate
-            color="secondary"
-          />
-          <PlaceholderChart v-else-if="!loading && !element.store.object?.data"></PlaceholderChart>
           <BaseChart
-            v-else-if="chartArgs[element.text]"
             v-bind="chartArgs[element.text]"
           />
         </div>

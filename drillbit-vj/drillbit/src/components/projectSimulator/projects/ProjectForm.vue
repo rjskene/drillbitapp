@@ -8,7 +8,6 @@ import ChartScroll from '../../reuseable/charts/ChartScroll.vue'
 import BaseChart from '../../reuseable/charts/BaseChart.vue'
 import ProjectFormInfraSection from './ProjectFormInfraSection.vue'
 import ProjectFormRigSection from './ProjectFormRigSection.vue'
-import ProjectCostsTable from './ProjectCostsTable.vue'
 
 import { 
   useProjectStore,
@@ -17,7 +16,7 @@ import {
   useWeatherDataStore,
 } from '@/stores/modules'
 
-import { useFormatHelpers, useFormHelpers } from '@/services/composables'
+import { useFormHelpers } from '@/services/composables'
 
 const store = useProjectStore()
 const rigStore = useRigStore()
@@ -183,6 +182,7 @@ const saveProject = () => {
 watch(() => props.project, (newVal) => {
   project.value = newVal || createNewProject()
 })
+
 /* 
 Manages state of the Temperature module
 
@@ -231,9 +231,14 @@ watch(() => tempPanel.value, (newVal, oldVal) => {
       let initIndex = stationStore.objects.findIndex((obj) => obj.location === location)    
       station.value = stationStore.objects[initIndex]
     })
-  } else if (!newVal) {
+} else if (!newVal) {
     project.value.ambient_temp_source = null
     project.value.target_ambient_temp = null
+  }
+})
+watch(() => stations.value, (newVal, oldVal) => {
+  if (newVal.length > 0) {
+    station.value = stations.value[0]
   }
 })
 watch(() => station.value, (newVal, oldVal) => {

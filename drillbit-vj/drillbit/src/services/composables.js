@@ -37,7 +37,6 @@ export function useFormatHelpers() {
     return value
   }
   const BTC = (value, {toFixed = 0} = {}) => {
-
     return '\u20BF ' + value.toFixed(toFixed).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
   }
   const T = (value) => {
@@ -257,7 +256,10 @@ export function useForecastForm ({
 }
 
 export class TableMaker {
-  constructor(potentialCols, statColumns=null, selectedPeriod=null, periodParams={}) {
+  /* 
+  
+  */
+  constructor(potentialCols, statColumns=null, periodParams={}) {
     this.requiredAttrs = { 
       'bodyClass': null, 
       'component': false,
@@ -276,7 +278,6 @@ export class TableMaker {
     if (statColumns !== null) {
       const periodCols = statColumns.slice(this.columns.length)   
       this.periodParams = periodParams
-      this.selectedPeriod = selectedPeriod
       if (periodCols !== null)
         this.pushPeriodColumns(periodCols)
         this.attachPeriodAttrs(periodCols)
@@ -314,18 +315,8 @@ export class TableMaker {
   periodAttrs () {
     var base = {
       bodyFunc: (data, field) => format.currency(data[field]),
-      headerClass: 'grc-table-header grc-table-header-right',
-      bodyClass: 'grc-table-body grc-table-body-right grc-table-body-padding-right-2',
       sortable: false
     }    
-    if (this.selectedPeriod === 'M' || this.selectedPeriod === 'Q') {
-      base['headerClass'] = 'grc-table-header grc-table-header-right'
-      base['bodyClass'] = 'grc-table-body grc-table-body-right min-col-width-7dot5 grc-table-body-padding-right-2'
-    }
-    if (this.selectedPeriod === 'A') {
-      base['headerClass'] = 'grc-table-header grc-table-header-right'
-      base['bodyClass'] = 'grc-table-body grc-table-body-right min-col-width-7dot5 grc-table-body-padding-right-2'
-    }
     for (const [key, value] of Object.entries(this.periodParams)) {
       base[key] = value
     }
@@ -336,6 +327,74 @@ export class TableMaker {
       if (periodCols.includes(field.field)) {
         Object.entries(this.periodAttrs(periodCols)).forEach(entries => {
           var [k, v] = entries
+          if (!(k in field)) {
+            field[k] = v
+          }
+        })
+      }
+    })
+  }
+}
+
+export class NewTableMaker {
+  /* 
+  
+  */
+  constructor({columns, otherHeaders, headerParams}) {
+    this.requiredAttrs = { 
+      'bodyClass': null, 
+      'component': false,
+      'bodyFunc': false,
+      'editor': false, 
+      'filter': false,
+      'frozen': false,
+      'hidden': false,
+      'spanWrap': false,
+      'sortable': false,
+    }
+    this.columns = []
+    columns.forEach(col => {
+      this.columns.push(col)
+    })
+
+    if (otherHeaders) {
+      this.headerParams = headerParams
+      this.pushHeaderColumns(otherHeaders)
+      this.attachHeaderAttrs(otherHeaders)
+    }
+    this.attachRequiredAttrs()
+  }
+  pushHeaderColumns (headers){
+    headers.forEach(header => {
+      this.columns.push({
+        field: header,
+        header: header,
+      })
+    })
+  }
+  attachRequiredAttrs() { 
+    this.columns.forEach((field) => {
+      Object.entries(this.requiredAttrs).forEach(entries => {
+        var [k, v] = entries
+        if (!(k in field)) {
+          field[k] = v
+        }
+      })
+    })
+  }
+  // periodAttrs () {
+  //   var base = {
+  //     sortable: false
+  //   }    
+  //   for (const [key, value] of Object.entries(this.periodParams)) {
+  //     base[key] = value
+  //   }
+  //   return base
+  // }  
+  attachHeaderAttrs(headers) {
+    this.columns.forEach((field) => {
+      if (headers.includes(field.field)) {
+        Object.entries(this.headerParams).forEach(([k,v]) => {
           if (!(k in field)) {
             field[k] = v
           }

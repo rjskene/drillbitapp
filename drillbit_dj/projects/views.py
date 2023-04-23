@@ -3,9 +3,13 @@ import pandas as pd
 
 from celery.result import AsyncResult
 from django.http import HttpResponse
+from django.db.models import ProtectedError
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from django_filters.rest_framework import DjangoFilterBackend, filterset
+from rest_framework import filters
+
 
 from .models import RigForProject, InfraForProject, Project, Projects, \
     ProjectSimulation, ProjectStatement, ProjectStatementSummary
@@ -30,12 +34,25 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         # want to return updated data; the original serializer will not do that   
-        print ('are we in here??????')  
         super().update(request, *args, **kwargs)
         updated_instance = self.get_object()
         updated_serializer = self.get_serializer(updated_instance)
         return Response(updated_serializer.data)
 
+    def destroy(self, request, *args, **kwargs):
+        project = self.get_object()
+
+        try: 
+            project.delete()
+        except ProtectedError as e:
+            sims = ProjectSimulation.objects.filter(project=project)
+            ProjectStatement.objects.filter(sim__in=sims).delete()
+            ProjectStatementSummary.objects.filter(sim__in=sims).delete()
+            sims.delete()
+            project.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
     @action(detail=True, methods=['put'], name='Scale Project')
     def scale(self, request, *args, **kwargs):
         project = self.get_object()
@@ -64,46 +81,77 @@ class ProjectSimulationViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    @action(detail=False, methods=['delete'], name='Delete all statements')
+    def delete_all_statements(self, request, *args, **kwargs):
+        sim_ids = request.data
+        sims = ProjectSimulation.objects.filter(id__in=sim_ids)
+        ProjectStatement.objects.filter(sim__in=sims).delete()
+        ProjectStatementSummary.objects.filter(sim__in=sims).delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 class ProjectStatementViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectStatementSerializer
     queryset = ProjectStatement.objects.all()
-
-    # def retrieve(self, request, *args, **kwargs):
-    #     frequency = request.query_params.get('frequency', 'M')
-    #     stat = self.get_object()
-    #     serializer = ProjectStatementSerializer(stat, frequency=frequency)
-    #     return Response(serializer.data)
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = {
+        'sim': ['in', 'exact'], # note the 'in' field
+        'frequency': ['in', 'exact']
+    }
 
     def create(self, request, *args, **kwargs):
-        # custom create that allows many=True
-        # frequency is required by the serializer but should NOT
-        # be provided in the request.  ONLY '10T' is allowed.
-        # All others are created via celery task
-        # then you have to take frequency OUT again 
-        # for the tasks
-        data = request.data.copy()
-        if isinstance(data, list):
-            for d in data:
-                d['frequency'] = '10T'
-        else:
-            data['frequency'] = '10T'
+        """
+        Custom create that supports creation of statements for multiple simulations
+
+        Create accepts a list of simulation ids, for each of which it creates a pre-defined 
+        set of financial statements.
+
+        This creation thus has two dimensions:
+            1. the number of simulations
+            2. the various frequencies for each simulation
+            
+        The parameter structure is as follows:
+            + if request.data is not a list, make it a list
+            + from the list of simulation ids, a new data structure is created that 
+            contains the simulation id and the frequency, so that serializer can validate the data
+
+        The base block-level statement is created for each simulation along with the 
+        summary statement, inside the serializer. The remaining statements for 
+        periods ['H', 'D', 'M', 'Q', 'A'] are create asynchronously via celery tasks.
+
+        The method returns a dictionary of the task ids for each simulation so the status can be 
+        monitored by the client separately.
+
+        Parameters
+        ----------
+        request : rest_framework.request.Request
+            The request object that contains a list of simulation ids in the request.data attribute.
+            If request.data is not a list, it is converted to a list.
+
+        Return
+        --------
+        A dictionary of simulation ids and the tasks that were created for each simulation
+        """
         
-        serializer = self.get_serializer(data=request.data, many=isinstance(request.data, list))
+        if not isinstance(request.data, list):
+            request.data = [request.data]
+
+        data = []
+        for d in request.data:
+            data.append({
+                'sim': d,
+                'frequency': '10T'
+            })
+        
+        serializer = self.get_serializer(data=data, many=isinstance(data, list))
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
 
-        tasks = []
-        if isinstance(data, list):
-            for d in data:
-                d.pop('frequency')
-                task = create_statements_for_given_project(**d) # DONT NEED TO DELAY THIS NESTED TASK!
-                tasks.append(task)
-        else:
-            data.pop('frequency')
-            task = create_statements_for_given_project(**data)
-            tasks.append(task)
+        tasks = {}
+        for sim_id in request.data:
+            sim_tasks = create_statements_for_given_project(sim_id)
+            tasks[sim_id] = sim_tasks
 
-        # headers = self.get_success_headers(serializer.data)
         return Response(
             tasks,
             status=status.HTTP_201_CREATED, 
@@ -143,21 +191,22 @@ class ProjectStatementViewSet(viewsets.ModelViewSet):
         projects = Project.objects.filter(pk__in=projects)
         project_dfs = []
         for project in projects:
+            sim = ProjectSimulation.objects.get(environment=environment, project=project.id)
             data = {
-                'environment': environment, 
-                'project': project.id, 
+                'sim': sim.id,
                 'frequency': frequency
             }
             ser = ProjectStatementSerializer(data=data)
             ser.is_valid()
             ser.save()
+
             env = ser.data['env']
             roi = ser.data['roi']
             istat = ser.data['istat']
             df = pd.concat((
                 pd.DataFrame(env['stat']).set_index('index'),
-                pd.DataFrame(roi['stat']).set_index('index'),
                 pd.DataFrame(istat['stat']).set_index('index'),
+                pd.DataFrame(roi['stat']).set_index('index') if roi else None,
             )).fillna(0)
             project_dfs.append(df)
 
@@ -230,7 +279,7 @@ class ProjectStatementSummaryViewSet(viewsets.ModelViewSet):
         df = pd.DataFrame(summs).T
         df.columns = [p.name for p in projects]
 
-        return Response(df.reset_index().to_dict(orient='records'))
+        return Response(df.fillna(0).reset_index().to_dict(orient='records'))
 
 class ProjectsViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectsSerializer
@@ -243,3 +292,17 @@ def get_progress(request, task_id):
         'details': result.info,
     }
     return HttpResponse(json.dumps(response_data))
+
+# class InListFilter(df.Filter):
+#     """
+#     Expects a comma separated list
+#     filters values in list
+#     """
+#     def filter(self, qs, value):
+#         if value:
+#             return qs.filter(**{self.name+'__in': value.split(',')})
+#         return qs
+
+# class MyFilterSet(df.FilterSet):
+#     status = InListFilter(name='status')
+

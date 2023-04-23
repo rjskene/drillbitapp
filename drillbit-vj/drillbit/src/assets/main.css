@@ -131,6 +131,9 @@ padding: .5rem !important;
 .table-header-left > .p-column-header-content {
   justify-content: left !important;
 }
+.table-header-center {
+  justify-content: center !important;
+}
 .table-header-center > .p-column-header-content {
   justify-content: center !important;
 }

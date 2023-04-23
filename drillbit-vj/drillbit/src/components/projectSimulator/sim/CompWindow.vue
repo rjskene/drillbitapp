@@ -1,21 +1,25 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useAsyncState } from '@vueuse/core'
 
 import SimpleTable from '@/components/reuseable/SimpleTable.vue'
 import BaseChart from '@/components/reuseable/charts/BaseChart.vue'
 import PlaceholderChart from '../../reuseable/charts/PlaceholderChart.vue'
 import ChartScroll from '../../reuseable/charts/ChartScroll.vue'
 
-import { useProjectsStore, useStatementStore } from '@/stores/modules'
+import { useEnvironmentStore, useProjectsStore, useStatementStore } from '@/stores/modules'
 
 import { useFormatHelpers, TableMaker } from '@/services/composables'
 
+const envStore = useEnvironmentStore()
 const projectsStore = useProjectsStore()
 const statStore = useStatementStore()
 const formatHelpers = useFormatHelpers()
 const view = ref(1)
 const tableType = ref(0)
+
+const { allTasksComplete } = storeToRefs(statStore)
 
 const columns = computed(() => {
   let cols = [
@@ -52,7 +56,6 @@ const summary_hash_price_rows = [
 const summary_percent_rows = [
   'ROI, held', 'IRR 3-year, held', 'IRR 5-year, held', 'IRR terminal, held'
 ]
-
 const tableRows = computed(() => {
   let tableRows = [
     {
@@ -123,7 +126,6 @@ const tableRowsByName = computed(() => {
   })
   return tableRowsByName
 })
-
 const rowFormat = (data, field) => {
   if (Object.keys(tableRowsByName.value).includes(data.index)) {
     let unit = tableRowsByName.value[data.index].unit
@@ -156,6 +158,9 @@ const data = computed(() => {
 })
 
 /* Charts Section */
+const freq = ref(2)
+const freqState = ref(null)
+
 const accounts = ref([])
 const accountIndex = ref(0)
 let istat_dollar_accounts = [
@@ -174,13 +179,17 @@ let roi_dollar_accounts = [
   'Cumulative Net, sold', 'Cumulative Net, held',
   'ROI, sold', 'ROI, held'
 ]
-const chartItems = [
-  // {
-  //   header: 'Environment',
-  //   disabled: true,
-  // },
+const chartItems = computed(() => [
+  {
+    title: 'Environment',
+    type: 'header'
+  },
+  {
+    title: 'Hashes',
+    type: 'subheader'
+  },
   {   
-    title: 'Number of Miners',
+    title: 'Number of Rigs',
     yTickFormat: 'number',
   },
   {
@@ -196,6 +205,10 @@ const chartItems = [
     yTickFormat: 'percentage',
   },
   {
+    title: 'Energy Consumption',
+    type: 'subheader'
+  },
+  {
     title: 'Energy - Miner',
     yTickFormat: 'energy',
   },
@@ -206,6 +219,10 @@ const chartItems = [
   {
     title: 'Energy',
     yTickFormat: 'energy',
+  },
+  {
+    title: 'Rewards',
+    type: 'subheader'
   },
   {
     title: 'BTC Reward',
@@ -224,34 +241,46 @@ const chartItems = [
     yTickFormat: 'BTC',
     description: 'BTC Mined = BTC Reward + Transaction Fees - Pool Fees',
   },
-  // {
-  //   title: 'Income Statement',
-  //   value: 'Income Statement',
-  //   header: true,    
-  // },
+  {
+    type: 'divider'
+  },
+  {
+    title: 'Financials',
+    type: 'header'
+  },
+  {
+    title: 'Income Statement',
+    type: 'subheader'
+  },
   ...istat_dollar_accounts.map((account) => {
     return {
       title: account,
       yTickFormat: 'currency',
     }
   }),
+  {
+    title: 'Bitcoin',
+    type: 'subheader'
+  },
   ...istat_bitcoin_accounts.map((account) => {
     return {
       title: account,
       yTickFormat: 'BTC',
     }
   }),
-  // {
-  //   title: 'ROI',
-  //   header: true,
-  // },
+  {
+    title: 'ROI',
+    type: 'subheader'
+  },
   ...roi_dollar_accounts.map((account) => {
+    let yTickFormat = ['ROI, sold', 'ROI, held'].includes(account) ? 'percentage' : 'currency'
     return {
       title: account,
-      yTickFormat: 'currency',
+      yTickFormat,
+      disabled: freq.value < 2
     }
   })
-]
+])
 
 /* 
 Chart Args Section
@@ -269,7 +298,6 @@ const chartArgs = ref(null)
 const updateChartArgs = () => {
   let labels = statStore.byAccount?.labels
   let datasets = statStore.byAccount?.datasets[accounts.value[accountIndex.value]]
-
   chartArgs.value = {
     labels,
     datasets,
@@ -277,7 +305,8 @@ const updateChartArgs = () => {
     options: {
       plugins: {
         legend: {
-          display: false,
+          display: true,
+          position: 'bottom',
         },
       },
     },
@@ -290,10 +319,30 @@ const updateChartArgs = () => {
         },
       }
     },
-    // yTickFormat: activeElement.value?.chartOptions.yTickFormat,
-    // yTickFormatOptions: activeElement.value?.chartOptions.yTickFormatOptions,
+    yTickFormat: chartItems.value.find((item) => item.title === accounts.value[accountIndex.value]).yTickFormat,
   }
 }
+
+watch(() => allTasksComplete.value, (allTasksComplete) => {
+  if (allTasksComplete) {
+    var params = {
+      environment: envStore.object.id,
+      projects: projectsStore.object.projects.map((project) => project.id),
+      frequency: 'M',
+    }
+    freqState.value = useAsyncState(
+      statStore.getByAccount({params}).then(() => {
+        updateChartArgs()
+      }),
+      {},
+      {
+        onError: (error) => {
+          console.error(error.response ?? error)
+        }
+      }
+    )
+  }
+})
 watch(() => accounts.value, (newVal) => {
   if (newVal.length > 0) {
     accountIndex.value = accounts.value.length - 1
@@ -305,88 +354,161 @@ watch(() => accounts.value, (newVal) => {
 watch(() => accountIndex.value, (newVal) => {
   updateChartArgs()
 })
+watch(() => freq.value, (newVal) => {
+  var params = {
+    environment: envStore.object.id,
+    projects: projectsStore.object.projects.map((project) => project.id),
+    frequency: statStore.allowedFreqs[newVal],
+  }
+  freqState.value = useAsyncState(
+    statStore.getByAccount({params}).then(() => {
+      updateChartArgs()
+    }),
+    {},
+    {
+      onError: (error) => {
+        console.error(error.response ?? error)
+      }
+    }
+  )
+})
 
 </script>
 
 <template>
-  <v-container>
-  <v-row class="h-100">
-    <v-col class="h-100">
-      <v-toolbar
-        density="compact"
-        color="surface"
-        class="pt-2 px-2"
-      >
-        <v-btn-toggle
-          v-model="view"
-          :disabled="!statStore.summary"
-          class="mr-6"
-          mandatory
-        >
-          <v-btn
-            icon="mdi-table"
-          />
-          <v-btn
-            icon="mdi-chart-bar"
-            :disabled="!statStore.summary"
-          />
-        </v-btn-toggle>
-        <v-divider vertical class="mt-2"></v-divider>
-        <v-btn-toggle
-          v-if="view === 0"
-          v-model="tableType"
-          :disabled="!statStore.summary"
-          class="ml-6"
-          mandatory
-        >
-          <v-btn icon="mdi-scale-balance"/>
-          <v-btn icon="mdi-currency-usd"/>
-          <v-btn icon="mdi-pound"/>
-          <v-btn icon="mdi-chart-line-variant"/>
-        </v-btn-toggle>
-        <v-select
-          v-else
-          v-model="accounts"
-          label="Select accounts"
-          class="mt-6 ml-6"
-          :items="chartItems"
-          single-line
-          multiple
-          clearable
-          chips
-        />
-      </v-toolbar>
-      <SimpleTable
-        v-if="view === 0 && data?.length > 0"
-        :data="data"
-        :columns="columns"
-        class="ma-3 pa-6 mb-0 pb-3"
+  <v-toolbar
+    density="compact"
+    color="surface"
+    class="mt-0 pt-1 px-2"
+  >
+    <v-btn-toggle
+      v-model="view"
+      class="mr-6"
+      mandatory
+    >
+      <v-btn
+        icon="mdi-table"
+        :disabled="!statStore.summary"
       />
-      <v-card
-        v-else-if="view === 1 && statStore.byAccount"
-        class="ma-3 pa-6 mb-0 pb-0"
-        flat
+      <v-btn
+        icon="mdi-chart-bar"
+        :disabled="!statStore.byAccount"
+      />
+    </v-btn-toggle>
+    <v-divider vertical class="mt-2"></v-divider>
+    <v-btn-toggle
+      v-if="view === 0"
+      v-model="tableType"
+      :disabled="!statStore.summary"
+      class="ml-6"
+      mandatory
+    >
+      <v-btn icon="mdi-scale-balance"/>
+      <v-btn icon="mdi-currency-usd"/>
+      <v-btn icon="mdi-pound"/>
+      <v-btn icon="mdi-chart-line-variant"/>
+    </v-btn-toggle>
+    <v-select
+      v-else
+      v-model="accounts"
+      label="Select accounts"
+      class="mt-6 ml-6"
+      :items="chartItems"
+      :disabled="!statStore.byAccount"
+      single-line
+      multiple
+      clearable
+      chips
+    >
+      <template v-slot:item="{ item, props }">
+        <v-divider v-if="item.raw.type === 'divider'" />
+        <v-card-title 
+          v-else-if="item.raw.type === 'header'"
+          class="font-weight-medium text-medium-emphasis">
+          {{ item.title }}
+        </v-card-title>
+        <v-list-subheader v-else-if="item.raw.type === 'subheader'">
+          {{ item.title }}
+        </v-list-subheader>
+        <v-list-item 
+          v-else 
+          v-bind="props" 
+          class="ml-3"
+          :disabled="item.raw.disabled"
+        />
+      </template>
+    </v-select>
+  </v-toolbar>
+  <SimpleTable
+    v-if="view === 0 && data?.length > 0"
+    :data="data"
+    :columns="columns"
+    class="ma-3 pa-6 mb-0 pb-3"
+  />
+  <v-card
+    v-else-if="view === 1"
+    class="mb-0 pb-0"
+    flat
+  >
+
+      <PlaceholderChart 
+        v-if="accounts.length === 0 || !chartArgs"
+        :min-height="600"
+        class="mt-12"
+      />
+      <div 
+        v-else-if="chartArgs"
       >
-          <PlaceholderChart 
-            v-if="accounts.length === 0 || !chartArgs"
-            min-height="600"
-          />
-          <ChartScroll
-            v-else-if="chartArgs"
-            :num-objects="accounts?.length"
-            v-model:objects-index="accountIndex"
+        <v-row class="mt-3">
+          <v-col cols="1" 
+            class="d-flex align-center justify-center flex-column mt-8 mr-0 pr-0"
           >
-            <template #chart>
-              <span class="text-caption font-italic">*Values are monthly aggregates</span>
-              <BaseChart v-bind="chartArgs"/>
-            </template>
-          </ChartScroll>
-      </v-card>
-    </v-col>
-  </v-row>
-</v-container>
+            <v-progress-circular
+              v-if="freqState?.isLoading"
+              color="secondary"
+              :size="20"
+              indeterminate
+            />
+            <div
+              v-else
+              class="mt-5"
+            ></div>
+            <v-btn-toggle
+              v-model="freq"
+              class="vertical"
+              mandatory
+            >
+              <div v-for="freq in statStore.allowedFreqs"
+                :key="freq"
+              >
+                <v-btn 
+                  size="small"
+                >
+                {{ freq }}
+                </v-btn>
+              </div>
+            </v-btn-toggle>
+          </v-col>
+          <v-col class="ml-0 pl-0">
+            <ChartScroll
+              :num-objects="accounts?.length"
+              v-model:objects-index="accountIndex"
+            >
+              <template #chart>
+                <span class="text-caption font-italic">*Values are monthly aggregates</span>
+                <BaseChart v-bind="chartArgs"/>
+              </template>
+            </ChartScroll>
+          </v-col>
+        </v-row>
+      </div>
+  </v-card>
 </template>
   
 <style scoped>
+:deep(.v-btn-toggle.vertical) {
+  flex-direction: column;
+  height: 100%;
+}
 </style>
 

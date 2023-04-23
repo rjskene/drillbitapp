@@ -20,7 +20,8 @@ class RigForProject(ProjectModel):
         return RigOperator(
             product=self.rig.as_drillbit_object(), 
             quantity=self.quantity, 
-            overclocking=self.project.target_overclocking
+            overclocking=self.project.target_overclocking,
+            price=self.price,
         )
 
 class InfraForProject(ProjectModel):
@@ -130,6 +131,7 @@ class Project(ProjectModel):
             target_ambient_temp=target_ambient_temp,
             target_overclocking=self.target_overclocking,
             energy_price=self.energy_price,
+            pool_fees=self.pool_fees,
             rigs=[rig.as_drillbit_object() for rig in self.rigs.all()][0], # only use first rig for now
             infrastructure=[infra.as_drillbit_object() for infra in self.infrastructure.all()],
         )
@@ -138,8 +140,12 @@ class ProjectSimulation(ProjectModel):
     environment = models.ForeignKey(Environment, on_delete=models.PROTECT)
     project = models.ForeignKey(Project, on_delete=models.PROTECT)
 
+    class Meta:
+        unique_together = ('environment', 'project')
+
 FREQUENCY_CHOICES = (
     ('10T', '10 Minutes'),
+    ('H', 'Hourly'),
     ('D', 'Daily'),
     ('M', 'Monthly'),
     ('Q', 'Quarterly'),
@@ -151,7 +157,7 @@ class ProjectStatement(ProjectModel):
 
     env = models.JSONField(default=dict)
     istat = models.JSONField(default=dict)
-    roi = models.JSONField(default=dict)
+    roi = models.JSONField(default=dict, null=True)
 
 class ProjectStatementSummary(ProjectModel):
     sim = models.ForeignKey(ProjectSimulation, on_delete=models.PROTECT)
