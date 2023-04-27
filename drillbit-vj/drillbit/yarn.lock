@@ -2626,10 +2626,10 @@ vue-router@^4.1.6:
     "@vue/server-renderer" "3.2.45"
     "@vue/shared" "3.2.45"
 
-vuetify@^3.1.2:
-  version "3.1.6"
-  resolved "https://registry.npmjs.org/vuetify/-/vuetify-3.1.6.tgz"
-  integrity sha512-4We27L5ksy8esNKfUPWPucEU+M7XJDO2o66zXL5qiBVbALwshcK2CAobLQMx+ALtkLENXAYNH3RzvfAYjTi3Aw==
+vuetify@^3.1.15:
+  version "3.1.15"
+  resolved "https://registry.npmjs.org/vuetify/-/vuetify-3.1.15.tgz"
+  integrity sha512-uxB4UCrP+hFyJaoSsVObAGBRD73qq5ga7HULepzGoMeUWap2H99mcqmMdN/a/Yp4ODK3gT8EcUeph3EgEcsArQ==
 
 w3c-xmlserializer@^4.0.0:
   version "4.0.0"

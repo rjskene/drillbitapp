@@ -123,6 +123,9 @@ class ProjectSerializer(serializers.ModelSerializer):
             'rigs', 
             'infrastructure',
             '__auto_scale__',
+            'created_at',
+            'updated_at',
+
         )
         list_serializer_class = ProjectListSerializer
 
@@ -199,10 +202,19 @@ class ProjectsSerializer(serializers.ModelSerializer):
         queryset=Project.objects.all(), 
         write_only=True
     )
+    __remove_projects__ = serializers.BooleanField(default=False)
 
     class Meta:
         model = Projects
-        fields = ('id', 'name', 'projects', 'project_ids')
+        fields = (
+            'id', 
+            'name', 
+            'projects', 
+            'project_ids',
+            'created_at',
+            'updated_at',
+            '__remove_projects__',
+        )
 
     def create(self, validated_data):
         project_ids = validated_data.pop('project_ids', [])
@@ -214,13 +226,18 @@ class ProjectsSerializer(serializers.ModelSerializer):
         return projects
 
     def update(self, projects, validated_data):
+        __remove_projects__ = validated_data.pop('__remove_projects__', False)
         project_ids = validated_data.pop('project_ids', [])
         projects._meta.model.objects \
             .filter(pk=projects.pk) \
             .update(**validated_data)
 
-        for project_id in project_ids:
-            projects.projects.add(project_id)
+        if __remove_projects__:
+            for project_id in project_ids:
+                projects.projects.remove(project_id)
+        else:
+            for project_id in project_ids:
+                projects.projects.add(project_id)
 
         return projects
 

@@ -11,10 +11,10 @@ import {
   useRejectionStore,
   useElectricalStore,
   useEnvironmentStore,
+  useProjectStore,
   useProjectsStore,
   useCurrentStateStore,
   useWeatherStationStore,
-  useWeatherDataStore,
   } from './stores/modules'
 
 const rigStore = useRigStore()
@@ -27,6 +27,8 @@ const electricalStore = useElectricalStore()
 electricalStore.getObjects()
 const environmentStore = useEnvironmentStore()
 environmentStore.getObjects()
+const projectStore = useProjectStore()
+projectStore.getObjects()
 const projectsStore = useProjectsStore()
 projectsStore.getObjects()
 const stateStore = useCurrentStateStore()

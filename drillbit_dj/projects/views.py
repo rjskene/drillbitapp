@@ -42,7 +42,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         project = self.get_object()
 
-        try: 
+        try:
             project.delete()
         except ProtectedError as e:
             sims = ProjectSimulation.objects.filter(project=project)

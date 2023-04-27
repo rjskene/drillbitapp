@@ -1,7 +1,17 @@
+<!-- PROJECT FORM -->
+<!--
+
+  This is the main form for creating and editing projects.
+
+  The form is only passed the id of the project (no other data!). 
+  The form then fetches all other data from the store.
+
+ -->
 <script setup>
-import { ref, computed, onMounted, watch, watchEffect } from 'vue'
+
+import { ref, toRefs, computed, onMounted, watch, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useRefHistory, useAsyncState } from '@vueuse/core'
+import { useAsyncState, useRefHistory } from '@vueuse/core'
 
 import StatefulBtn from '@/components/reuseable/StatefulBtn.vue'
 import ChartScroll from '../../reuseable/charts/ChartScroll.vue'
@@ -18,23 +28,36 @@ import {
 
 import { useFormHelpers } from '@/services/composables'
 
+const { nameRules, numberRules, percentageRules } = useFormHelpers()
 const store = useProjectStore()
-const rigStore = useRigStore()
 const stationStore = useWeatherStationStore()
 const dataStore = useWeatherDataStore()
-
-const { nameRules, numberRules, percentageRules } = useFormHelpers()
-const { objects: dataObjects } = storeToRefs(dataStore)
-
-const dataObject = computed(() => {
-  return dataObjects.value[0]
-})
+const rigStore = useRigStore()
 
 const props = defineProps({
   project: {
     type: Object,
     default: null
   }
+})
+
+const { project } = toRefs(props)
+const emit = defineEmits(['close'])
+const changesNotSaved = ref(false)
+
+const update = async () => {
+  await store.updateObject({
+      pk: project.value.id,
+      params: project.value,
+  }).then(() => {
+    store.getObjects()
+    changesNotSaved.value = false
+  })
+}
+const { history, undo, redo } = useRefHistory(project, {deep: true})
+watch(history, (oldVal, newVal) => {
+  if (JSON.stringify(oldVal) !== JSON.stringify(newVal))
+    changesNotSaved.value = true
 })
 
 const projectStructure = computed(() => {
@@ -150,38 +173,6 @@ const projectStructure = computed(() => {
       default: 0,
   }}
 })
-const createNewProject = () => {
-  /* 
-  creates a new object with keys same as projectStructure
-  and values set to null, except where there is a default
-  value in projectStructure
-  */
-  return Object.fromEntries(
-    Object.entries(projectStructure.value).map(([key, value]) => {
-      return [key, value.default ?? null]
-    })
-  )
-}
-const project = ref(
-  props.project || createNewProject()
-)
-
-const changesNotSaved = ref(false)
-const { history, undo, redo } = useRefHistory(project, {deep: true})
-watch(history, (history) => {
-  changesNotSaved.value = true
-})
-const saveProject = () => {
-  if (project.value && Object.keys(project.value).includes('id') && project.value.id) {
-    return  store.update(project.value).then(() => (changesNotSaved.value = false))
-  }
-  else {
-    return store.create(project.value).then(() => (changesNotSaved.value = false))
-  }
-}
-watch(() => props.project, (newVal) => {
-  project.value = newVal || createNewProject()
-})
 
 /* 
 Manages state of the Temperature module
@@ -203,6 +194,10 @@ and station will capture changes to the station, and in turn fetch the required 
 and set the project.ambient_temp_source and project.target_ambient_temp
 
 */
+const { objects: dataObjects } = storeToRefs(dataStore)
+const dataObject = computed(() => {
+  return dataObjects.value[0]
+})
 
 const tempPanel = ref(null) 
 const region = ref('Texas') // Regions are only brought over as the name, not objects; so no need to search thru index
@@ -335,13 +330,6 @@ const updateInfraObjectId = (index, id) => {
 const deleteInfra = (index, pk) => {
   project.value.infrastructure.splice(index, 1)
 }
-
-const costs = ref(null)
-const updateCosts = (pk) => {
-  store.scale(pk).then(async () => {
-    costs.value = await store.costs(pk)
-  })
-}
 </script>
   
 <template>
@@ -359,30 +347,18 @@ const updateCosts = (pk) => {
       <v-tooltip text="Tooltip" location="top" open-on-click>
         <template v-slot:activator="{ props }">
           <StatefulBtn
-            @click="saveProject"
+            @click="update"
             variant="flat"
             :icon="changesNotSaved ? 'mdi-alert': 'mdi-content-save'"
             :iconProps="changesNotSaved ? {color: 'red'} : {color: 'on-secondary'}"
           />
         </template>
       </v-tooltip>
-      <v-btn
-        @click="undo"
-        color="on-surface"
-        variant="flat"
-        icon="mdi-undo"
-      />
-      <v-btn
-        @click="redo"
-        color="on-surface"
-        variant="flat"
-        icon="mdi-redo"
-      />
-      <v-checkbox 
+      <v-checkbox
         v-model="project.__auto_scale__"
-        label="Auto-scale on save"
+        label="Auto-scale"
         class="mt-6"
-        />
+      />
     </v-sheet>
     <v-sheet
       class="d-flex justify-left mx-3"

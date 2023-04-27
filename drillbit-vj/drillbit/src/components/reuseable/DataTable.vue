@@ -58,7 +58,6 @@ const filters = ref(props.filters) // value attribute needs to be changed
 const selections = ref([])
 const hasSelections = computed(() => selections.value.length > 0)
 const editingRows = ref([])
-const expandedRows = ref([])
 
 const dtableAttrs = computed(() => {
   let dtableAttrs = {}
@@ -96,12 +95,6 @@ defineExpose({dtable})
 </script>
 
 <template>
-  <CrudActions
-    :hasSelections="hasSelections"
-    @add="addNew()"
-    @delete="deleteSelections()"
-    @export:csv="dtable.exportCSV()"
-  />
   <DataTable
     ref="dtable"
     dataKey="id"
@@ -111,9 +104,6 @@ defineExpose({dtable})
     :showFilterMatchModes="true"
     v-model:selection="selections"
     selectionMode="multiple"
-    v-model:editingRows="editingRows"
-    @row-edit-save="event => onRowEditSave(event, data)"
-    v-model:expandedRows="expandedRows"
     :scrollable="true"
     :scrollDirection="props.scrollDirection"
     sortMode="multiple"
@@ -123,7 +113,6 @@ defineExpose({dtable})
     stripedRows
     v-bind="dtableAttrs"
   >
-    <Column v-if="props.edit" :rowEditor="true" :exportable="false" frozen/>
     <Column
       v-for="col of columns"
       v-bind="col"
@@ -162,8 +151,9 @@ defineExpose({dtable})
     <Column 
       v-if="props.expansion"
       :expander="true"
-    >
-    </Column>
+      headerClass='grc-table-pipeline-expander'
+      bodyClass='grc-table-pipeline-expander'
+    />
     <template v-if="props.expansion" #expansion="slotProps">
       <slot :props="slotProps" name="expansion">
       </slot> 

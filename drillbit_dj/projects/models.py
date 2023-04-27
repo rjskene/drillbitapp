@@ -65,17 +65,23 @@ class InfraForProject(ProjectModel):
 class Project(ProjectModel):
     name = models.CharField('Name', max_length=100)
     description = models.TextField('Description', blank=True, null=True)
-    capacity = models.FloatField('Capacity')
+    capacity = models.FloatField('Capacity', default=0)
 
     ambient_temp_source = models.ForeignKey(
         WeatherStation, 
         on_delete=models.PROTECT,
         related_name='projects',
+        blank=True,
         null=True,
     )
-    target_ambient_temp = models.JSONField('Target Ambient Temperature', default=dict, null=True)
+    target_ambient_temp = models.JSONField(
+        'Target Ambient Temperature', 
+        default=dict,
+        blank=True,
+        null=True
+    )
     target_overclocking = models.FloatField('Target Overclock Factor', default=1)
-    energy_price = models.FloatField('Energy Price')
+    energy_price = models.FloatField('Energy Price', default=0)
 
     pool_fees = models.FloatField('Pool Fees', default=0)
     tax_rate = models.FloatField('Tax Rate', default=0)

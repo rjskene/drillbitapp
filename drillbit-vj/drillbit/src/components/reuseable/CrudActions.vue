@@ -75,28 +75,6 @@ const emitCSV = () => {
       :disabled="disableCSV"
       @click="emitCSV"
     />
-    <!-- <v-btn 
-      v-bind="btnProps"
-      @click="emitSave"
-    >
-      <slot>
-        <v-slide-x-transition :hide-on-leave="true">
-          <v-icon v-if="saveError" :v-bind="btnProps" color="red">mdi-alert-circle-outline</v-icon>
-          <v-icon v-else-if="saveSuccess" :v-bind="btnProps" color="green">mdi-check</v-icon>
-          <v-icon v-else>mdi-content-save</v-icon>
-        </v-slide-x-transition>
-      </slot>
-    </v-btn> -->
-    <!-- <v-btn
-      icon="mdi-undo"
-      v-bind="btnProps"
-      @click="emitUndo"
-    />
-    <v-btn
-      icon="mdi-redo"
-      v-bind="btnProps"
-      @click="emitRedo"
-    /> -->
   </v-toolbar>
 </template>
     

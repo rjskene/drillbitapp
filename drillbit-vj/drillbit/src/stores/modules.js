@@ -48,8 +48,7 @@ export const productPlugin = ({store}) => {
       }).then((result) => {
         // If return value is an array, store as objects, else store as object
         if (Array.isArray(result.data))
-          {store.objects = result.data
-          }
+          store.objects = result.data
         else
           store.object = result.data
         })  
@@ -431,17 +430,7 @@ export const useProjectStore = defineStore('projectStore', () => {
       projects.value = projects.value.filter((obj) => obj.id !== pk)
     })
   }
-  const scale = async (pk) => {
-    return client.scaleProject({app, model: dataModel, pk}).then((result) => {
-      let index = projects.value.findIndex((obj) => obj.id === result.data.id)
-      projects.value[index] = result.data
-    })
-  }
-  const costs = async (pk) => {
-    let result = await client.getProjectCosts({app, model: dataModel, pk})
-    return result.data
-  }
-  return { app, dataModel, projects, projectIds, create, update, del, scale, costs }
+  return { app, dataModel, projects, projectIds, create, update, del }
 })
 export const useProjectsStore = defineStore('projectsStore', () => {
   const app = 'projects'
@@ -455,9 +444,9 @@ export const useProjectsStore = defineStore('projectsStore', () => {
       .getObjectsByPK({app, model: dataModel, pk})
       .then((result) => {
         object.value = result.data
-        projectStore.$patch((state) => {
-          state.projects = result.data.projects
-        })
+        // projectStore.$patch((state) => {
+        //   state.projects = result.data.projects
+        // })
     })
   }
   const save = async () => {

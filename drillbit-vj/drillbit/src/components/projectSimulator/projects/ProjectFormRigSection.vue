@@ -94,7 +94,6 @@ watch(() => rig.value.rig_id, (rig_id) => {
       <span class="text-body-2 text-medium-emphasis mr-1">Total Cost:</span>
       {{format.currency(rig.quantity * rig.price)}}
     </v-col>
-
   </v-row>
 </template>
   

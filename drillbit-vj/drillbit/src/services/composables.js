@@ -22,6 +22,11 @@ export const every_nth = (arr, nth) => arr.filter((e, i) => i % nth === nth - 1)
 
 export function useFormatHelpers() {
   const btcStr = '\u20BF'
+  const date = (dateStr) => {
+    let dateObj = new Date(dateStr)
+    return dateObj.toLocaleString()
+  }
+
   const percentage = (value) => {
     return (value*100).toFixed(2) + '%'
   }
@@ -100,7 +105,14 @@ export function useFormatHelpers() {
     let units = ['$/H', '$/KH', '$/MH', '$/GH', '$/TH', '$/PH', '$/EH', '$/ZH', '$/YH', '$/RH']
     return inverseScaler(value, units, toFixed)
   }
-  return { btcStr, percentage, number, temperature, BTC, currency, T, hashes, hashRate, power, energy, efficiency, hashPrice }
+  const energyPrice = (value, {toFixed = 0} = {}) => {
+    let units = ['$/Wh', '$/KWh', '$/MWh', '$/GWh', '$/TWh', '$/PWh', '$/EWh', '$/ZWh', '$/YWh', '$/RWh']
+    return inverseScaler(value, units, toFixed)
+  }
+  return { 
+    date, btcStr, percentage, number, temperature, BTC, currency, T, 
+    hashes, hashRate, power, energy, efficiency, hashPrice, energyPrice
+  }
 }
 
 const format = useFormatHelpers()
