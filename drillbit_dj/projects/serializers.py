@@ -38,6 +38,7 @@ class RigForProjectSerializer(serializers.ModelSerializer):
     project = serializers.PrimaryKeyRelatedField(read_only=True)
     rig = RigSerializer(read_only=True)
     rig_id = serializers.PrimaryKeyRelatedField(queryset=Rig.objects.all())
+    cost = serializers.SerializerMethodField()
 
     class Meta:
         model = RigForProject
@@ -46,11 +47,15 @@ class RigForProjectSerializer(serializers.ModelSerializer):
             'project',
             'quantity',
             'price',
+            'cost',
             'amortization',
             'rig', 
             'rig_id'
         )
         list_serializer_class = ProjectListSerializer
+
+    def get_cost(self, obj):
+        return obj.price * obj.quantity
 
 class InfrastructureRelatedField(serializers.RelatedField):
     """
@@ -75,6 +80,7 @@ class InfraForProjectSerializer(serializers.ModelSerializer):
     infrastructure = InfrastructureRelatedField(read_only=True)
     infra_content_type = serializers.SlugRelatedField(queryset=ContentType.objects.all(), slug_field='model')
     infra_object_id = serializers.IntegerField()
+    cost = serializers.SerializerMethodField()
 
     class Meta:
         model = InfraForProject
@@ -83,12 +89,16 @@ class InfraForProjectSerializer(serializers.ModelSerializer):
             'project',
             'quantity',
             'price',
+            'cost',
             'amortization',
             'infrastructure',
             'infra_content_type', 
             'infra_object_id',
         )
         list_serializer_class = ProjectListSerializer
+
+    def get_cost(self, obj):
+        return obj.price * obj.quantity
 
 class ProjectSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(allow_null=True, required=False) # needs to be declared explicilty so it is not read-only and available for updates
@@ -101,6 +111,8 @@ class ProjectSerializer(serializers.ModelSerializer):
     ambient_temp_source_name = serializers.SerializerMethodField()
     target_ambient_temp = serializers.JSONField(allow_null=True)
     
+    total_capital_cost = serializers.SerializerMethodField()
+
     # Allows rig and infrastructure quantity to be scaled automatically using the ProjectManager `scale` method
     __auto_scale__ = serializers.BooleanField(default=False)
 
@@ -122,6 +134,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             'property_taxes',
             'rigs', 
             'infrastructure',
+            'total_capital_cost',
             '__auto_scale__',
             'created_at',
             'updated_at',
@@ -131,6 +144,11 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     def get_ambient_temp_source_name(self, obj):
         return obj.ambient_temp_source.location if obj.ambient_temp_source else None
+
+    def get_total_capital_cost(self, obj):        
+        cost = sum([rig.price * rig.quantity for rig in obj.rigs.all()]) \
+            + sum([infra.price * infra.quantity for infra in obj.infrastructure.all()])
+        return cost
 
     def create(self, validated_data):
         auto_scale = validated_data.pop('__auto_scale__', False)

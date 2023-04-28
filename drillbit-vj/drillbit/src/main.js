@@ -10,7 +10,7 @@ import { Chart as ChartJS, registerables } from 'chart.js'
 // ALL THIS PRIMEVUE STUFF FOR FREAKIN DATATABLE!!!!!
 import "primevue/resources/themes/lara-light-blue/theme.css"
 import "primevue/resources/primevue.min.css"
-import "primeicons/primeicons.css"
+// import "primeicons/primeicons.css"
 import PrimeVue from 'primevue/config'
 
 
@@ -39,7 +39,7 @@ app.use(PrimeVue)
 app.mount('#app')
 
 import annotationPlugin from 'chartjs-plugin-annotation'
-
+12
 ChartJS.register(...registerables)
 ChartJS.register(annotationPlugin)
 // ChartJS.defaults.backgroundColor = vuetify.theme.themes.value.light.colors.blue

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, toRefs, watch, computed } from 'vue'
-
+import { storeToRefs } from 'pinia'
 import { useAsyncState } from '@vueuse/core'
 
 import StatefulBtn from '../../reuseable/StatefulBtn.vue'
@@ -18,42 +18,9 @@ const formHelpers = useFormHelpers()
 const store = useEnvironmentStore()
 
 const activeIndex = ref(-1)
-const elements = [
-  {
-    text: 'Block Schedule',  
-    store: useBlockScheduleStore(), 
-    dataKey: 'reward',
-    chartOptions: {
-      yTickFormat: 'BTC',
-    }
-  },
-  {
-    text: 'BTC Price', 
-    store: useBTCPriceStore(), 
-    dataKey: 'forecast',
-    chartOptions: {
-      yTickFormat: 'currency',
-      yTickFormatOptions: {maximumFractionDigits: 0}
-    }
-  },
-  {
-    text: 'Transaction Fees', 
-    store: useFeeStore(), 
-    dataKey: 'forecast',
-    chartOptions: {
-      yTickFormat: 'BTC',
-      yTickFormatOptions: {toFixed: 2}
-    }
-  },
-  {
-    text: 'Network Hash Rate',
-    store: useHashRateStore(),
-    dataKey: 'forecast',
-    chartOptions: {
-      yTickFormat: 'hashRate',
-    }
-  }
-]
+const elements = computed(() => {
+  return store.elements
+})
 const activeElement = computed(() => {
   return elements[activeIndex.value]
 })
@@ -78,7 +45,7 @@ const load = (params) => {
       }
     )
     loadState.value.execute().then(() => {
-      for (let element of elements) {
+      for (let element of elements.value) {
         store.$patch(() => {
           store.locked[elementName(element)] = true
         })
@@ -236,8 +203,6 @@ const readyOrNot = (name) => {
     <template #main-panel>
       <EnvironmentSummary
         v-if="activeIndex === -1"
-        :elements="elements"
-        :environment="store.object"
         :loading="loadState.isLoading"
       />
       <FactorForm

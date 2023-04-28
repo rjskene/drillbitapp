@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, toRefs } from 'vue'
+import { storeToRefs } from 'pinia'
 
 import PlaceholderChart from '../../reuseable/charts/PlaceholderChart.vue'
 import BaseChart from '../../reuseable/charts/BaseChart.vue'
@@ -8,22 +9,16 @@ import { useEnvironmentStore } from '@/stores/modules'
 import { every_nth } from '../../../services/composables'
 
 const store = useEnvironmentStore()
-
 const props = defineProps({
-  elements: {
-    type: Array,
-    required: true,
-  },
-  environment: {
-    type: Object,
-    default: null,
-  },
   loading: {
     type: Boolean,
     default: false,
   },
 })
-const { elements, loading } = toRefs(props)
+const { loading } = toRefs(props)
+const elements = computed(() => {
+  return store.elements
+})
 
 const allStoresHaveData = computed(() => {
   return elements.value.every((element) => {
@@ -91,7 +86,6 @@ const chartArgs = computed(() => {
 })
 
 </script>
-  
   
 <template>
   <v-container

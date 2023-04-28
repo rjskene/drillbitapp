@@ -55,3 +55,7 @@ class Environment(ProjectModel):
     bitcoin_price = models.ForeignKey(BitcoinPrice, on_delete=models.PROTECT)
     transaction_fees = models.ForeignKey(TransactionFees, on_delete=models.PROTECT)
     hash_rate = models.ForeignKey(HashRate, on_delete=models.PROTECT)
+
+# class Environments(ProjectModel):
+#     name = models.CharField(max_length=100)
+#     environments = models.ManyToManyField(Environment)

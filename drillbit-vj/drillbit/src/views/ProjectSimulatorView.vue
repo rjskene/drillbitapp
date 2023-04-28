@@ -12,7 +12,7 @@
     {text: 'Projects', component: ProjectWindow},
     {text: 'Simulation', component: SimWindow}
   ]
-  const currentTab = ref('Projects')
+  const currentTab = ref('Simulation')
 
 </script>
   

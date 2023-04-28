@@ -237,7 +237,11 @@ const columns = computed(() => {
     <template v-slot:expanded-row="{ columns, item }">
       <tr>
         <td :colspan="columns.length">
-          <v-container>
+          <v-card
+            color="surface-02dp"
+            elevation="0"
+            class="rounded-xl my-6 pa-6"
+          >
             <v-card-title class="ml-0 pl-0">Details</v-card-title>
             <v-row class="pt-3">
               <v-col>
@@ -302,7 +306,7 @@ const columns = computed(() => {
                 {{format.currency(infra.quantity * infra.price)}}
               </v-col>
             </v-row>
-          </v-container>
+          </v-card>
         </td>
       </tr>
     </template>

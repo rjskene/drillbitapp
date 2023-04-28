@@ -382,9 +382,52 @@ export const useEnvironmentStore = defineStore('environmentStore', () => {
       && feeStore.hasObject && feeStore.object?.blocks === blockScheduleStore.object?.id
       && blockScheduleStore.hasObject && hashRateStore.object?.blocks === blockScheduleStore.object?.id
   })
+
+  const elements = [
+    {
+      text: 'Block Schedule',  
+      key: 'block_schedule',
+      store: useBlockScheduleStore(), 
+      dataKey: 'reward',
+      chartOptions: {
+        yTickFormat: 'BTC',
+      }
+    },
+    {
+      text: 'BTC Price', 
+      key: 'bitcoin_price',
+      store: useBTCPriceStore(), 
+      dataKey: 'forecast',
+      chartOptions: {
+        yTickFormat: 'currency',
+        yTickFormatOptions: {maximumFractionDigits: 0}
+      }
+    },
+    {
+      text: 'Transaction Fees', 
+      key: 'transaction_fees',
+      store: useFeeStore(), 
+      dataKey: 'forecast',
+      chartOptions: {
+        yTickFormat: 'BTC',
+        yTickFormatOptions: {toFixed: 2}
+      }
+    },
+    {
+      text: 'Network Hash Rate',
+      key: 'hash_rate',
+      store: useHashRateStore(),
+      dataKey: 'forecast',
+      chartOptions: {
+        yTickFormat: 'hashRate',
+      }
+    }
+  ]
+
   return {
     app, dataModel,
-    object, components, 
+    object, components,
+    stores, elements, 
     save, load, clear,
     lockable, locked, allLocked, allLockable
   }
@@ -438,6 +481,7 @@ export const useProjectsStore = defineStore('projectsStore', () => {
 
   const projectStore = useProjectStore()
   const object = ref(null)
+
   const load = async (params) => {
     let pk = params.id
     return client
@@ -630,10 +674,42 @@ export const useStatementStore = defineStore('statementStore', () => {
     return client.getStatByAccount({params}).then((result) => { 
       byAccount.value = result.data
     })
-  }  
+  }
+  const summaryGroups = [[
+    'Capacity', 'Compute Power', 'Infra Power', 
+    'Number of Rigs', 'HR / rig',
+    'Hash Rate',
+    'Total Hashes', 'Energy Consumption', 'Efficiency'
+  ],[
+    'Rig Costs', 'Total Infra Costs', 
+    'Capital Costs', 'Total Cost', 
+    'Rigs Hash Price', 'Infra Hash Price', 
+    'Build Hash Price', 'Cash Hash Price'
+  ],[
+    'BTC, held', 'Net Cash Flow, held', 
+    'Net Gain, held', 'ROI, held', 
+    'IRR 3-year, held', 'IRR 5-year, held', 'IRR terminal, held', 'Breakeven'
+  ]]
+  const summaryDollarRows = [
+    'Rig Costs', 'Total Infra Costs', 'Capital Costs', 'Total Cost',
+    'Net Cash Flow, held',
+    'Net Gain, held'
+  ]
+  const summaryHashPriceRows = [
+    'Rigs Hash Price', 'Infra Hash Price', 'Build Hash Price', 'Cash Hash Price'
+  ]
+  const summaryPercentRows = [
+    'ROI, held', 'IRR 3-year, held', 'IRR 5-year, held', 'IRR terminal, held'
+  ] 
+  const summaryFormatByRow = {
+    currency: summaryDollarRows, 
+    hashPrice: summaryHashPriceRows, 
+    percentage: summaryPercentRows
+  } 
   return { 
     app, dataModel, allowedFreqs, 
-    createObjects, summary, getSummary, 
+    createObjects, summary, getSummary, summaryGroups,
+    summaryFormatByRow,
     byAccount, getByAccount,
     taskStatuses, hasTasks, nTasksComplete, nTasksToComplete, allTasksComplete,
     projectTasksComplete,

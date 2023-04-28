@@ -1,15 +1,15 @@
 <script setup>
-import { ref, watchEffect, computed } from 'vue'
+import { ref, watchEffect, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import StatefulBtn from '@/components/reuseable/StatefulBtn.vue'
+import PptBtn from '@/components/reuseable/PptBtn.vue'
 import MainWindow from '../MainWindow.vue'
 import CompWindow from './CompWindow.vue'
 
-import { createPPTX } from '../../../services/ppt'
-
 import { 
  useEnvironmentStore, 
+ useProjectStore,
  useProjectsStore,
  useSimulationStore,
  useStatementStore
@@ -17,12 +17,14 @@ import {
 import { useFormHelpers } from '@/services/composables'
 import ProjectFinancialStatements from './ProjectFinancialStatements.vue'
 
+const projStore = useProjectStore()
 const projectsStore = useProjectsStore()
 const envStore = useEnvironmentStore()
 const simStore = useSimulationStore()
 const statStore = useStatementStore()
 const formHelpers = useFormHelpers()
 
+const { objects: projects } = storeToRefs(projStore)
 const { nTasksToComplete, nTasksComplete, hasTasks, projectTasksComplete} = storeToRefs(statStore)
 const taskProgress = computed(() => {
   return 100 * nTasksComplete.value / nTasksToComplete.value
@@ -57,6 +59,7 @@ const runSim = () => {
       statStore.getObjects({sim__in: sims, frequency: 'M'})
     })
 }
+
 </script>
 
 <template>
@@ -87,11 +90,7 @@ const runSim = () => {
       label="Overwrite existing"
       class="mt-6"
     />
-    <v-btn
-      @click="createPPTX"
-      icon="mdi-file-powerpoint-box-outline"
-    ></v-btn>
-    <div class="d-flex justify-center pt-3">
+    <div class="d-flex justify-space-around align-center pt-3">
       <StatefulBtn
         @click="runSim"
         :disabled="!simStore.objects || simStore.objects.length === 0"
@@ -100,6 +99,12 @@ const runSim = () => {
         icon="mdi-play"
         size="large"
       />
+      <ppt-btn
+        :disabled="!statStore.summary || Object.keys(statStore.summary).length === 0"
+        :environment="envStore.object"
+        :group="projectsStore.object"
+        :summary="statStore.summary"
+      ></ppt-btn>
     </div>
     <v-card-subtitle class="mt-8"></v-card-subtitle>
     <v-progress-linear

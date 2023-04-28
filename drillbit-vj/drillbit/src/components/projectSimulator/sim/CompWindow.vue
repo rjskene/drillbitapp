@@ -45,17 +45,6 @@ const columns = computed(() => {
   let table = new TableMaker(cols)
   return table.columns
 })
-const summary_dollar_rows = [
-  'Rig Costs', 'Total Infra Costs', 'Capital Costs', 'Total Cost',
-  'Net Cash Flow, held',
-  'Net Gain, held'
-]
-const summary_hash_price_rows = [
-  'Rigs Hash Price', 'Infra Hash Price', 'Build Hash Price', 'Cash Hash Price'
-]
-const summary_percent_rows = [
-  'ROI, held', 'IRR 3-year, held', 'IRR 5-year, held', 'IRR terminal, held'
-]
 const tableRows = computed(() => {
   let tableRows = [
     {
@@ -94,19 +83,19 @@ const tableRows = computed(() => {
       name: 'Efficiency',
       unit: 'efficiency',
     },
-    ...summary_dollar_rows.map((row) => {
+    ...statStore.summaryFormatByRow.currency.map((row) => {
       return {
         name: row,
         unit: 'currency',
       }
     }),
-    ...summary_hash_price_rows.map((row) => {
+    ...statStore.summaryFormatByRow.hashPrice.map((row) => {
       return {
         name: row,
         unit: 'hashPrice',
       }
     }),
-    ...summary_percent_rows.map((row) => {
+    ...statStore.summaryFormatByRow.percentage.map((row) => {
       return {
         name: row,
         unit: 'percentage',
@@ -136,22 +125,7 @@ const rowFormat = (data, field) => {
 }
 
 const rows = computed(() => {
-  let tableRows = [
-    [
-      'Capacity', 'Compute Power', 'Infra Power', 
-      'Number of Rigs', 'HR / rig',
-      'Hash Rate',
-      'Total Hashes', 'Energy Consumption', 'Efficiency'
-    ],
-    ['Rig Costs', 'Total Infra Costs', 'Capital Costs', 'Total Cost'],
-    ['Rigs Hash Price', 'Infra Hash Price', 'Build Hash Price', 'Cash Hash Price'],
-    [
-      'BTC, held', 'Net Cash Flow, held', 
-      'Net Gain, held', 'ROI, held', 
-      'IRR 3-year, held', 'IRR 5-year, held', 'IRR terminal, held', 'Breakeven'
-    ]
-  ]
-  return tableRows[tableType.value]
+  return statStore.summaryGroups[tableType.value]
 })
 const data = computed(() => {
   return statStore.summary?.filter((obj) => rows.value.includes(obj.index))
@@ -163,7 +137,7 @@ const freqState = ref(null)
 
 const accounts = ref([])
 const accountIndex = ref(0)
-let istat_dollar_accounts = [
+let istat_currency_accounts = [
   'Revenue - Reward', 'Revenue - Fees', 'Gross Revenue', 'Pool Fees',
   'Net Revenue', 'Energy Expenses', 'Gross Profit', 'Gross Margin',
   'Operating Expenses', 'Property Tax', 'EBITDA', 'Rig Amortization',
@@ -172,7 +146,7 @@ let istat_dollar_accounts = [
   'BTC Value, if held'
 ]
 let istat_bitcoin_accounts = ['BTC Converted for Expenses', 'BTC Earned', 'BTC, if held']
-let roi_dollar_accounts = [
+let roi_currency_accounts = [
   'Rigs Outlay', 'Infrastructure Outlay', 'Building Outlay',
   'Cash Outlays', 'Operating Cash Flow, held', 'Operating Cash Flow, sold',
   'Net Cash Flow, sold', 'Net Cash Flow, held',
@@ -252,7 +226,7 @@ const chartItems = computed(() => [
     title: 'Income Statement',
     type: 'subheader'
   },
-  ...istat_dollar_accounts.map((account) => {
+  ...istat_currency_accounts.map((account) => {
     return {
       title: account,
       yTickFormat: 'currency',
@@ -272,7 +246,7 @@ const chartItems = computed(() => [
     title: 'ROI',
     type: 'subheader'
   },
-  ...roi_dollar_accounts.map((account) => {
+  ...roi_currency_accounts.map((account) => {
     let yTickFormat = ['ROI, sold', 'ROI, held'].includes(account) ? 'percentage' : 'currency'
     return {
       title: account,
@@ -405,7 +379,6 @@ watch(() => freq.value, (newVal) => {
     >
       <v-btn icon="mdi-scale-balance"/>
       <v-btn icon="mdi-currency-usd"/>
-      <v-btn icon="mdi-pound"/>
       <v-btn icon="mdi-chart-line-variant"/>
     </v-btn-toggle>
     <v-select
@@ -450,58 +423,57 @@ watch(() => freq.value, (newVal) => {
     class="mb-0 pb-0"
     flat
   >
-
-      <PlaceholderChart 
-        v-if="accounts.length === 0 || !chartArgs"
-        :min-height="600"
-        class="mt-12"
-      />
-      <div 
-        v-else-if="chartArgs"
-      >
-        <v-row class="mt-3">
-          <v-col cols="1" 
-            class="d-flex align-center justify-center flex-column mt-8 mr-0 pr-0"
+    <PlaceholderChart 
+      v-if="accounts.length === 0 || !chartArgs"
+      :min-height="600"
+      class="mt-12"
+    />
+    <div 
+      v-else-if="chartArgs"
+    >
+      <v-row class="mt-3">
+        <v-col cols="1" 
+          class="d-flex align-center justify-center flex-column mt-8 mr-0 pr-0"
+        >
+          <v-progress-circular
+            v-if="freqState?.isLoading"
+            color="secondary"
+            :size="20"
+            indeterminate
+          />
+          <div
+            v-else
+            class="mt-5"
+          ></div>
+          <v-btn-toggle
+            v-model="freq"
+            class="vertical"
+            mandatory
           >
-            <v-progress-circular
-              v-if="freqState?.isLoading"
-              color="secondary"
-              :size="20"
-              indeterminate
-            />
-            <div
-              v-else
-              class="mt-5"
-            ></div>
-            <v-btn-toggle
-              v-model="freq"
-              class="vertical"
-              mandatory
+            <div v-for="freq in statStore.allowedFreqs"
+              :key="freq"
             >
-              <div v-for="freq in statStore.allowedFreqs"
-                :key="freq"
+              <v-btn 
+                size="small"
               >
-                <v-btn 
-                  size="small"
-                >
-                {{ freq }}
-                </v-btn>
-              </div>
-            </v-btn-toggle>
-          </v-col>
-          <v-col class="ml-0 pl-0">
-            <ChartScroll
-              :num-objects="accounts?.length"
-              v-model:objects-index="accountIndex"
-            >
-              <template #chart>
-                <span class="text-caption font-italic">*Values are monthly aggregates</span>
-                <BaseChart v-bind="chartArgs"/>
-              </template>
-            </ChartScroll>
-          </v-col>
-        </v-row>
-      </div>
+              {{ freq }}
+              </v-btn>
+            </div>
+          </v-btn-toggle>
+        </v-col>
+        <v-col class="ml-0 pl-0">
+          <ChartScroll
+            :num-objects="accounts?.length"
+            v-model:objects-index="accountIndex"
+          >
+            <template #chart>
+              <span class="text-caption font-italic">*Values are monthly aggregates</span>
+              <BaseChart v-bind="chartArgs"/>
+            </template>
+          </ChartScroll>
+        </v-col>
+      </v-row>
+    </div>
   </v-card>
 </template>
   
